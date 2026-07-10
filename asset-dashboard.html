@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>資產戰情儀表板</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  :root{
+    --bg:#0B0E14;
+    --surface:#141922;
+    --surface-alt:#1B222D;
+    --line:#262E3A;
+    --gold:#D4AF6A;
+    --gold-dim:#8A7248;
+    --teal:#4FBF9F;
+    --coral:#E2685E;
+    --text:#EDEFF3;
+    --text-muted:#8993A4;
+    --text-faint:#5B6472;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -5%, rgba(212,175,106,0.07), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 0%, rgba(79,191,159,0.05), transparent 60%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    padding:32px 20px 80px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1180px;margin:0 auto;}
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--gold);margin:0 0 6px;
+  }
+  h1{
+    font-family:'Source Serif 4',serif;
+    font-weight:600;font-size:30px;margin:0;letter-spacing:.01em;
+  }
+  .topbar{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px;margin-bottom:28px;}
+  .status{display:flex;align-items:center;gap:10px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-muted);}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--text-faint);}
+  .dot.ok{background:var(--teal);box-shadow:0 0 8px rgba(79,191,159,.7);}
+  .dot.err{background:var(--coral);box-shadow:0 0 8px rgba(226,104,94,.7);}
+  
+  /* 按鈕樣式設定 */
+  .btn-group{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  button.refresh{
+    font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.05em;
+    background:var(--surface-alt);color:var(--text);border:1px solid var(--line);
+    padding:9px 16px;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:8px;
+    transition:all .15s;
+  }
+  button.refresh:hover{border-color:var(--gold-dim);color:var(--gold);}
+  button.refresh:active{transform:translateY(1px);}
+  
+  /* ✨ AI 財務顧問專屬發光按鈕 */
+  button.ai-btn{
+    font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.05em;
+    background:linear-gradient(135deg, rgba(79,191,159,0.15) 0%, rgba(212,175,106,0.15) 100%);
+    color:var(--gold);border:1px solid rgba(212,175,106,0.4);
+    padding:9px 16px;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:8px;
+    transition:all .2s ease;font-weight:600;box-shadow: 0 0 12px rgba(212,175,106,0.15);
+  }
+  button.ai-btn:hover{
+    background:linear-gradient(135deg, rgba(79,191,159,0.28) 0%, rgba(212,175,106,0.28) 100%);
+    border-color:var(--gold);color:#FFFFFF;transform:translateY(-1px);
+    box-shadow: 0 4px 18px rgba(212,175,106,0.35);
+  }
+  button.ai-btn:active{transform:translateY(1px);}
+
+  .spin{animation:spin 0.9s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* Toast 提示框 */
+  .toast{
+    position:fixed;bottom:24px;right:24px;
+    background:linear-gradient(135deg, #1B222D 0%, #121820 100%);
+    border:1px solid var(--gold);color:var(--text);
+    padding:16px 22px;border-radius:10px;font-size:13px;font-family:'Inter',sans-serif;
+    box-shadow:0 12px 35px rgba(0,0,0,0.6);z-index:9999;
+    display:flex;align-items:center;gap:10px;
+    opacity:0;transform:translateY(20px);pointer-events:none;transition:all .3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .toast.show{opacity:1;transform:translateY(0);pointer-events:auto;}
+
+  .card{
+    background:var(--surface);border:1px solid var(--line);
+    border-radius:14px;padding:24px;
+  }
+  
+  /* --- 英雄區塊極致美化設計 --- */
+  .hero{
+    display:grid;grid-template-columns:1.25fr 0.85fr;gap:36px;
+    margin-bottom:24px;
+    background:linear-gradient(160deg, var(--surface) 0%, #0F131C 100%);
+    border:1px solid rgba(212,175,106,0.25);
+    border-radius:16px;padding:28px 32px;
+    box-shadow: 0 12px 36px rgba(0,0,0,0.4);
+    position:relative;overflow:hidden;
+  }
+  @media (max-width:820px){ .hero{grid-template-columns:1fr; gap:28px;} }
+  
+  .hero-left {display:flex;flex-direction:column;justify-content:space-between;z-index:1;}
+  .hero-label{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;font-weight:600;}
+  
+  .hero-num-wrap { margin: 6px 0 18px; }
+  .hero-num{
+    font-family:'Source Serif 4',serif;font-weight:700;
+    font-size:48px;line-height:1.05;color:#FFFFFF;
+    letter-spacing:-0.01em;display:inline-block;
+  }
+  .hero-num span.currency{font-size:24px;color:var(--gold);font-weight:600;margin-right:6px;font-family:'Inter',sans-serif;vertical-align:2px;}
+  
+  .hero-sub{
+    display:grid;grid-template-columns:repeat(4, 1fr);gap:16px;
+    padding:16px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+    margin-bottom:20px;
+  }
+  @media (max-width:560px){ .hero-sub{grid-template-columns:repeat(2, 1fr);gap:14px;} }
+  .hero-sub div { position:relative; }
+  .hero-sub div:not(:last-child)::after {
+    content:'';position:absolute;right:-8px;top:10%;height:80%;width:1px;background:var(--line);
+  }
+  .hero-sub div .k{font-size:11px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;margin-bottom:4px;}
+  .hero-sub div .v{font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;color:var(--text);}
+  .v.pos{color:var(--teal);} .v.neg{color:var(--coral);} .v.gold{color:var(--gold);}
+
+  .goal-bars { display:flex;flex-direction:column;gap:14px; }
+  .goal-bar-wrap .k{font-size:11px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;}
+  .goal-input{
+    background:transparent;border:none;border-bottom:1px dashed var(--gold-dim);
+    color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;
+    width:92px;padding:0 0 1px;margin-left:2px;-moz-appearance:textfield;
+  }
+  .goal-input:focus{outline:none;border-bottom:1px solid var(--gold);}
+  .goal-input::-webkit-outer-spin-button,.goal-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+  .goal-track{height:6px;background:var(--surface-alt);border-radius:4px;overflow:hidden;border:1px solid var(--line);}
+  .goal-fill{height:100%;background:linear-gradient(90deg,var(--gold-dim),var(--gold));border-radius:4px;transition:width .6s ease;}
+  .leverage-fill{height:100%;background:linear-gradient(90deg, var(--teal) 0%, var(--gold) 50%, var(--coral) 100%);border-radius:4px;transition:width .6s ease;}
+
+  .ring-box{display:flex;align-items:center;gap:24px;justify-content:center;height:100%;}
+  .legend{display:flex;flex-direction:column;gap:10px;font-family:'IBM Plex Mono',monospace;font-size:13px;width:130px;}
+  .legend .row{display:flex;align-items:center;gap:9px;cursor:pointer;padding:4px 6px;border-radius:6px;transition:background .15s;}
+  .legend .row:hover{background:var(--surface-alt);}
+  .swatch{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+  .legend .pct{color:var(--text-muted);margin-left:auto;font-weight:500;}
+  .ring-path { transition: stroke-width 0.2s, filter 0.2s; cursor: pointer; }
+  .ring-path:hover { stroke-width: 20px; filter: drop-shadow(0 0 8px rgba(255,255,255,0.3)); }
+
+  /* --- 六宮格整齊劃一設計 (修正高度不一問題) --- */
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:20px 0;}
+  @media (max-width:900px){ .grid3{grid-template-columns:1fr 1fr;} }
+  @media (max-width:560px){ .grid3{grid-template-columns:1fr;} }
+  
+  .stat{
+    background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;
+    display:flex;flex-direction:column;justify-content:space-between;
+    transition:border-color .2s, transform .2s;
+  }
+  .stat:hover{border-color:var(--gold-dim);transform:translateY(-2px);}
+  .stat .k{font-size:11px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;letter-spacing:.05em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  
+  .stat .v{font-family:'Source Serif 4',serif;font-size:26px;font-weight:600;color:#FFFFFF;margin:4px 0;line-height:1.2;}
+  /* 美金專用等式 class，防手機版折行 */
+  .stat .v.usd-eq { font-family: 'IBM Plex Mono', monospace; font-size: 22px; letter-spacing: -0.5px; }
+  @media (max-width: 450px) { .stat .v.usd-eq { font-size: 17px !important; } }
+  
+  .stat .v-sub{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-muted);margin-top:auto;padding-top:4px;}
+
+  details.stat-details{
+    background:var(--surface);border:1px solid var(--line);border-radius:12px;
+    overflow:hidden;transition:border-color .2s, transform .2s;
+  }
+  details.stat-details:hover{border-color:var(--gold-dim);transform:translateY(-2px);}
+  details.stat-details[open]{border-color:var(--gold-dim);background:var(--surface-alt);transform:none;}
+  summary.stat-summary{
+    padding:20px;cursor:pointer;list-style:none;user-select:none;
+    display:flex;flex-direction:column;justify-content:space-between;
+  }
+  summary.stat-summary::-webkit-details-marker{display:none;}
+  summary.stat-summary .k{font-size:11px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;letter-spacing:.05em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  summary.stat-summary .v{font-family:'Source Serif 4',serif;font-size:26px;font-weight:600;color:#FFFFFF;margin:4px 0;line-height:1.2;}
+  summary.stat-summary::after{
+    content:'▾';float:right;color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:14px;transition:transform .2s;margin-top:-32px;
+  }
+  details[open] summary.stat-summary::after{transform:rotate(180deg);}
+  .cash-breakdown{
+    padding:0 20px 18px;border-top:1px dashed var(--line);margin-top:-4px;padding-top:14px;
+    font-family:'IBM Plex Mono',monospace;font-size:13px;display:flex;flex-direction:column;gap:8px;
+  }
+  .cash-item{display:flex;justify-content:space-between;color:var(--text-muted);}
+  .cash-item span:last-child{color:var(--text);font-weight:500;}
+
+  .section-title{
+    font-family:'Source Serif 4',serif;font-size:19px;margin:34px 0 14px;
+    display:flex;align-items:center;gap:10px;color:var(--text);
+  }
+  .section-title .tag{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-faint);font-weight:400;}
+  .cols2{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;}
+  @media (max-width:900px){ .cols2{grid-template-columns:1fr;} }
+
+  /* 關鍵修正：解決手機版表格擠在一起的跑版問題 */
+  .table-responsive-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+  .table-responsive-wrapper table { min-width: 550px; } /* 強制寬度，不足時出現卷軸 */
+  
+  table{width:100%;border-collapse:collapse;font-family:'IBM Plex Mono',monospace;font-size:13px; white-space:nowrap;}
+  th{text-align:right;color:var(--text-muted);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.04em;padding:0 0 10px;border-bottom:1px solid var(--line);}
+  th:first-child,td:first-child{text-align:left;}
+  td{padding:9px 0;border-bottom:1px solid var(--line);text-align:right;}
+  tr:last-child td{border-bottom:none;}
+  .foot-row td{border-top:1px solid var(--gold-dim);border-bottom:none;padding-top:12px;color:var(--gold);font-weight:600;}
+
+  .pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-family:'IBM Plex Mono',monospace;}
+  .pill.ok{background:rgba(79,191,159,.12);color:var(--teal);}
+  .pill.warn{background:rgba(212,175,106,.12);color:var(--gold);}
+
+  .wallet-list{max-height:290px;overflow-y:auto;padding-right:4px;}
+  .wallet-list::-webkit-scrollbar{width:5px;}
+  .wallet-list::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px;}
+
+  .deposit-tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px;}
+  .dep-tag{font-family:'IBM Plex Mono',monospace;font-size:11px;background:var(--surface-alt);border:1px solid var(--line);padding:4px 9px;border-radius:6px;color:var(--text-muted);}
+
+  .timeline{position:relative;padding-left:20px;}
+  .timeline::before{content:'';position:absolute;left:4px;top:4px;bottom:4px;width:1px;background:var(--line);}
+  .tl-item{position:relative;padding-bottom:20px;}
+  .tl-item:last-child{padding-bottom:0;}
+  .tl-item::before{content:'';position:absolute;left:-20px;top:4px;width:9px;height:9px;border-radius:50%;background:var(--surface);border:2px solid var(--gold-dim);}
+  .tl-item .bank{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text);}
+  .tl-item .dates{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-muted);margin-top:3px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;}
+  .tl-item .rate-col{float:right;text-align:right;}
+  .tl-item .rate{color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;}
+  .days-left{display:inline-block;font-size:10px;padding:1px 8px;border-radius:20px;font-family:'IBM Plex Mono',monospace;white-space:nowrap;}
+  .days-left.ok{background:rgba(79,191,159,.12);color:var(--teal);}
+  .days-left.warn{background:rgba(212,175,106,.12);color:var(--gold);}
+  .days-left.danger{background:rgba(226,104,94,.12);color:var(--coral);}
+
+  .chip-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px;}
+  .chip{background:var(--surface-alt);border:1px solid var(--line);border-radius:10px;padding:12px 14px;}
+  .chip .k{font-size:10px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;}
+  .chip .v{font-family:'IBM Plex Mono',monospace;font-size:14px;margin-top:4px;color:var(--text);}
+
+  .errbox{background:rgba(226,104,94,.08);border:1px solid rgba(226,104,94,.35);border-radius:12px;padding:20px;color:#F3BEB9;font-size:13px;line-height:1.7;margin-bottom:20px;display:none;}
+  .footer-note{text-align:center;color:var(--text-faint);font-size:11px;font-family:'IBM Plex Mono',monospace;margin-top:50px;letter-spacing:.03em;}
+
+  .val-neg { color: var(--coral) !important; font-weight: 600; }
+  
+  /* --- 👁️ 隱私模式 CSS 設定：只模糊數值，保留標籤與比例 --- */
+  body.privacy-active .v:not(#leverage):not(#debtRatio),
+  body.privacy-active .hero-num span:last-child,
+  body.privacy-active #twTableBody td:nth-child(2),
+  body.privacy-active #twTableBody td:nth-child(4),
+  body.privacy-active #walletBody td:nth-child(2),
+  body.privacy-active #debtBody td:nth-child(2),
+  body.privacy-active #twTotal,
+  body.privacy-active .dep-tag {
+      filter: blur(6px);
+      opacity: 0.6;
+      pointer-events: none;
+      user-select: none;
+      transition: filter 0.3s ease, opacity 0.3s ease;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div>
+      <p class="eyebrow">Personal Ledger</p>
+      <h1>資產戰情儀表板</h1>
+    </div>
+    <div class="btn-group">
+      <div class="status"><span class="dot" id="statusDot"></span><span id="statusText">尚未載入</span></div>
+      <button class="refresh" onclick="togglePrivacy()" title="一鍵隱藏具體金額">
+        👁️ 隱私模式
+      </button>
+      <button class="ai-btn" onclick="analyzeWithGemini()" title="自動生成全盤資產簡報並開啟 Gemini 分析">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        ✨ AI 資產顧問
+      </button>
+      <button class="refresh" id="refreshBtn" onclick="loadData()">
+        <svg id="refreshIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+        重新整理
+      </button>
+    </div>
+  </div>
+
+  <div class="errbox" id="errBox"></div>
+  <div id="aiToast" class="toast">✨ 已複製資產分析提示詞！正為您開啟 Gemini，前往直接貼上即可開始診斷 🚀</div>
+
+  <div id="dashboard" style="opacity:0;transition:opacity .4s;">
+
+    <div class="hero">
+      <div class="hero-left">
+        <div>
+          <span class="hero-label">★ 實際資產淨值 · NET ASSETS</span>
+          <div class="hero-num-wrap">
+            <div class="hero-num"><span class="currency">NT$</span><span id="netAssets">—</span></div>
+          </div>
+        </div>
+        
+        <div class="hero-sub">
+          <div><div class="k">帳面總資產</div><div class="v" id="grossAssets">—</div></div>
+          <div><div class="k">總負債</div><div class="v neg" id="totalDebt">—</div></div>
+          <div><div class="k">核心槓桿</div><div class="v gold" id="leverage">—</div></div>
+          <div><div class="k">資產負債比</div><div class="v" id="debtRatio">—</div></div>
+        </div>
+        
+        <div class="goal-bars">
+          <div class="goal-bar-wrap">
+            <div class="k">
+              <span>年度資產目標 NT$<input type="number" id="goalInput" class="goal-input" step="10000" oninput="onGoalInputChange()"></span>
+              <span id="goalPct" style="color:var(--gold);font-weight:600;">—</span>
+            </div>
+            <div class="goal-track"><div class="goal-fill" id="goalFill" style="width:0%"></div></div>
+          </div>
+          <div class="goal-bar-wrap">
+            <div class="k">
+              <span>核心投資槓桿 <span style="color:var(--text-faint); font-size:10px;">[1.0x 無槓桿 ➔ 3.0x 上限]</span></span>
+              <span id="leverageBarVal" style="color:var(--text); font-weight:600;">—</span>
+            </div>
+            <div class="goal-track" style="background:var(--surface-alt);">
+              <div class="leverage-fill" id="leverageFill" style="width:0%;"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      
+      <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;">
+        <span class="hero-label" style="margin-bottom:16px;">資產配置 · ALLOCATION</span>
+        <div class="ring-box">
+          <svg width="160" height="160" viewBox="0 0 160 160" id="ringSvg"></svg>
+          <div class="legend" id="legendBox"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid3">
+      <div class="stat"><div class="k">台股帳面</div><div class="v" id="stTwStock">—</div><div class="v-sub" style="visibility:hidden;">-</div></div>
+      <div class="stat"><div class="k">美股帳面</div><div class="v" id="stUsStock">—</div><div class="v-sub" style="visibility:hidden;">-</div></div>
+      <div class="stat"><div class="k">幣圈帳面</div><div class="v" id="stCrypto">—</div><div class="v-sub" style="visibility:hidden;">-</div></div>
+      
+      <details class="stat-details">
+        <summary class="stat-summary">
+          <div class="k"><span>台幣現金 <span style="font-size:10px;color:var(--gold);margin-left:4px;">[點擊展開]</span></span></div>
+          <div class="v" id="stCash">—</div>
+          <div class="v-sub" style="visibility:hidden;">-</div>
+        </summary>
+        <div class="cash-breakdown">
+          <div class="cash-item"><span>第一銀行</span><span id="cashBankA">—</span></div>
+          <div class="cash-item"><span>國泰世華</span><span id="cashBankB">—</span></div>
+          <div class="cash-item"><span>連線銀行</span><span id="cashBankC">—</span></div>
+        </div>
+      </details>
+
+      <div class="stat">
+        <div class="k">美金部位</div>
+        <div class="v usd-eq" id="stUsdMain">—</div>
+        <div class="v-sub" id="stUsdSub">即時匯率 —</div>
+      </div>
+      
+      <div class="stat">
+        <div class="k">應收外債</div>
+        <div class="v" id="stForeign">—</div>
+        <div class="v-sub" style="visibility:hidden;">-</div>
+      </div>
+    </div>
+
+    <div class="section-title">負債與借款 <span class="tag">主要負債與還款時程</span></div>
+    <div class="cols2">
+      <div class="card">
+        <div class="label" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;">主要負債項目</div>
+        <table>
+          <tbody id="debtBody"></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="label" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">借款與還款時程</div>
+        <div style="display:flex;justify-content:space-between;padding:0 0 10px 20px;border-bottom:1px solid var(--line);margin-bottom:14px;">
+          <span style="font-size:10px;color:var(--gold);letter-spacing:.06em;text-transform:uppercase;font-family:'IBM Plex Mono',monospace;cursor:pointer;user-select:none;" onclick="toggleLoanSort()" title="點擊依到期日切換近-遠排序">借款日 → 到期日 <span id="loanSortArrow" style="font-size:10px;margin-left:3px;">▼</span></span>
+          <span style="font-size:10px;color:var(--text-faint);letter-spacing:.06em;text-transform:uppercase;font-family:'IBM Plex Mono',monospace;">目前利率</span>
+        </div>
+        <div class="timeline" id="loanTimeline"></div>
+      </div>
+    </div>
+
+    <div class="section-title">台股持股 <span class="tag" id="twUpdated"></span></div>
+    <div class="card table-responsive-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>標的</th>
+            <th>張數</th>
+            <th>股價</th>
+            <th style="color:var(--gold);cursor:pointer;user-select:none;" onclick="toggleTwSort()" title="點擊依金額切換高低排序">
+              金額 (NT$) <span id="twSortArrow" style="font-size:10px;margin-left:4px;">▼</span>
+            </th>
+            <th>持股權重</th>
+          </tr>
+        </thead>
+        <tbody id="twTableBody"></tbody>
+        <tfoot>
+          <tr class="foot-row"><td>台股帳面價值合計</td><td colspan="2"></td><td id="twTotal">—</td><td>借貸維持率 <span class="pill ok" id="marginRatio">—</span></td></tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <div class="section-title">美股 <span class="tag" id="usUpdated"></span></div>
+    <div class="cols2">
+      <div class="card">
+        <div class="chip-row">
+          <div class="chip"><div class="k">部位金額 USD</div><div class="v" id="usUsd">—</div></div>
+          <div class="chip"><div class="k">換算台幣</div><div class="v" id="usTwd">—</div></div>
+          <div class="chip"><div class="k">即時匯率</div><div class="v" id="usFx">—</div></div>
+        </div>
+        <div class="chip-row">
+          <div class="chip"><div class="k">總投入 USD</div><div class="v" id="usInvested">—</div></div>
+          <div class="chip"><div class="k">帳面收益 USD</div><div class="v" id="usProfit">—</div></div>
+          <div class="chip"><div class="k">投報率</div><div class="v" id="usRoi">—</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="label" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">入金紀錄 (USD)</div>
+        <div class="deposit-tags" id="depositTags"></div>
+      </div>
+    </div>
+
+    <div class="section-title">幣圈資產 <span class="tag" id="cryptoUpdated"></span></div>
+    <div class="cols2">
+      <div class="card">
+        <div class="chip-row" style="grid-template-columns:1fr 1fr;">
+          <div class="chip"><div class="k">總價值 USD</div><div class="v" id="cryptoUsd">—</div></div>
+          <div class="chip"><div class="k">換算台幣</div><div class="v" id="cryptoTwd">—</div></div>
+        </div>
+        <div class="chip" style="margin-top:12px;"><div class="k">BTC 持有量</div><div class="v" id="btcAmt">—</div></div>
+      </div>
+      <div class="card">
+        <div class="wallet-list">
+          <table>
+            <thead>
+              <tr>
+                <th>錢包 / 平台</th>
+                <th style="color:var(--teal);cursor:pointer;user-select:none;" onclick="toggleWalletSort()" title="點擊切換排序">
+                  帳面價值 (USD) <span id="sortArrow" style="font-size:10px;margin-left:4px;">▼</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody id="walletBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer-note">資料來源：Google 試算表（公開發布 CSV）· 手動更新試算表後，重新整理此頁即可同步</div>
+</div>
+
+<script>
+const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTMDQCi1zQNLZLrDJ0nxByFqaQrJv8NcH7aXZ_59dpzapOcasM4neXW-3d_Njw6zPdtZtLNkUoG07IN/pub?output=csv";
+
+const fmtInt = n => Math.round(n).toLocaleString('en-US');
+const fmtMoney = n => {
+  const isNeg = n < 0;
+  return `<span class="${isNeg ? 'val-neg' : ''}">${isNeg ? '-NT$ ' : 'NT$ '}${fmtInt(Math.abs(n))}</span>`;
+};
+const fmtUsd = n => {
+  const isNeg = n < 0;
+  return `<span class="${isNeg ? 'val-neg' : ''}">${isNeg ? '-$' : '$'}${fmtInt(Math.abs(n))}</span>`;
+};
+// 保留小數點後兩位，專門給有小數精確度需求的欄位
+const fmtUsdDec = n => {
+  const isNeg = n < 0;
+  return `<span class="${isNeg ? 'val-neg' : ''}">${isNeg ? '-$' : '$'}${Math.abs(n).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>`;
+};
+const fmtPct = n => {
+  const isNeg = n < 0;
+  return `<span class="${isNeg ? 'val-neg' : ''}">${(n*100).toFixed(1)}%</span>`;
+};
+
+function parseNum(v){
+  if(v===undefined||v===null) return 0;
+  let s = String(v).trim();
+  if(s==='') return 0;
+  let neg = false;
+  if(/^\(.*\)$/.test(s)){ neg = true; s = s.slice(1,-1); }
+  const isPercent = s.includes('%');
+  s = s.replace(/[^0-9.\-]/g,'');
+  if(s===''||s==='-') return 0;
+  let n = parseFloat(s);
+  if(isNaN(n)) return 0;
+  if(neg) n = -Math.abs(n);
+  if(isPercent) n = n/100;
+  return n;
+}
+function safe(data,r,c){
+  if(!data[r]) return '';
+  const v = data[r][c];
+  return (v===undefined||v===null) ? '' : String(v).trim();
+}
+function excelDate(raw){
+  const s = (raw===undefined||raw===null) ? '' : String(raw).trim();
+  if(s === '') return '—';
+  if(/\d{4}[/-]\d{1,2}[/-]\d{1,2}/.test(s)) return s.replace(/-/g,'/');
+  if(/\d{1,2}[/-]\d{1,2}[/-]\d{4}/.test(s)){
+    const parts = s.split(/[/-]/);
+    return `${parts[2]}/${parts[0].padStart(2,'0')}/${parts[1].padStart(2,'0')}`;
+  }
+  const n = parseNum(s);
+  if(!n) return s;
+  const utcDays = Math.floor(n - 25569);
+  const d = new Date(utcDays*86400*1000);
+  return `${d.getUTCFullYear()}/${String(d.getUTCMonth()+1).padStart(2,'0')}/${String(d.getUTCDate()).padStart(2,'0')}`;
+}
+function parseDateObj(raw){
+  const s = (raw===undefined||raw===null) ? '' : String(raw).trim();
+  if(s === '') return null;
+  let y,m,d;
+  if(/^\d{4}[/-]\d{1,2}[/-]\d{1,2}$/.test(s)){
+    const p = s.split(/[/-]/); y=+p[0]; m=+p[1]; d=+p[2];
+  }else if(/^\d{1,2}[/-]\d{1,2}[/-]\d{4}$/.test(s)){
+    const p = s.split(/[/-]/); y=+p[2]; m=+p[0]; d=+p[1];
+  }else{
+    const n = parseNum(s);
+    if(!n) return null;
+    const utcDays = Math.floor(n - 25569);
+    return new Date(utcDays*86400*1000);
+  }
+  return new Date(Date.UTC(y, m-1, d));
+}
+function daysLeftInfo(dueRaw){
+  const due = parseDateObj(dueRaw);
+  if(!due) return { text:'—', cls:'ok' };
+  const today = new Date();
+  const todayUTC = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+  const diff = Math.round((due.getTime() - todayUTC) / 86400000);
+  if(diff < 0) return { text:'已逾期 ' + Math.abs(diff) + ' 天', cls:'danger' };
+  if(diff === 0) return { text:'今日到期', cls:'danger' };
+  const cls = diff <= 30 ? 'danger' : diff <= 90 ? 'warn' : 'ok';
+  return { text:'剩餘 ' + diff + ' 天', cls };
+}
+
+const COLORS = { tw:'#D4AF6A', us:'#4FBF9F', crypto:'#7DA6E0', cash:'#C88BC4' };
+
+let twStocks = [];
+let isTwSortDesc = true;
+let cryptoWallets = [];
+let isSortDesc = true;
+let loanList = [];
+let isLoanSortAsc = true;
+let lastNetAssets = 0;
+let lastGoalPct = 0;
+let lastGoalValue = 8000000;
+let latestDataSummary = null; 
+
+// 開關隱私模式
+function togglePrivacy() {
+  document.body.classList.toggle('privacy-active');
+}
+
+// 台股排序
+function toggleTwSort() {
+  isTwSortDesc = !isTwSortDesc;
+  document.getElementById('twSortArrow').textContent = isTwSortDesc ? '▼' : '▲';
+  renderTwStocks();
+}
+function renderTwStocks() {
+  twStocks.sort((a, b) => isTwSortDesc ? b.amount - a.amount : a.amount - b.amount);
+  document.getElementById('twTableBody').innerHTML = twStocks.map(s => `
+    <tr><td>${s.name}</td><td>${s.shares}</td><td>${s.price}</td><td>${fmtMoney(s.amount)}</td><td>${fmtPct(s.weight)}</td></tr>
+  `).join('');
+}
+
+// 幣圈錢包排序
+function toggleWalletSort() {
+  isSortDesc = !isSortDesc;
+  document.getElementById('sortArrow').textContent = isSortDesc ? '▼' : '▲';
+  renderWallets();
+}
+function renderWallets() {
+  cryptoWallets.sort((a, b) => isSortDesc ? b.value - a.value : a.value - b.value);
+  document.getElementById('walletBody').innerHTML = cryptoWallets.map(w => `
+    <tr><td>${w.name}</td><td>${fmtUsd(w.value)}</td></tr>
+  `).join('');
+}
+
+// 借款到期日排序（近→遠 / 遠→近）
+function toggleLoanSort() {
+  isLoanSortAsc = !isLoanSortAsc;
+  document.getElementById('loanSortArrow').textContent = isLoanSortAsc ? '▼' : '▲';
+  renderLoans();
+}
+function renderLoans() {
+  loanList.sort((a, b) => {
+    const da = parseDateObj(a.dueRaw), db = parseDateObj(b.dueRaw);
+    const ta = da ? da.getTime() : Infinity, tb = db ? db.getTime() : Infinity;
+    return isLoanSortAsc ? ta - tb : tb - ta;
+  });
+  document.getElementById('loanTimeline').innerHTML = loanList.map(l => {
+    const dl = daysLeftInfo(l.dueRaw);
+    return `
+    <div class="tl-item">
+      <div class="rate-col">
+        <span class="rate">${(l.rate*100).toFixed(2)}%</span>
+      </div>
+      <div class="bank">${l.bank}</div>
+      <div class="dates">
+        <span>${l.start} → ${l.due}</span>
+        <span class="days-left ${dl.cls}">${dl.text}</span>
+      </div>
+    </div>
+  `;
+  }).join('');
+}
+
+// ✨ Gemini AI 財務顧問
+function analyzeWithGemini() {
+  if (!latestDataSummary) {
+    alert("數據尚未載入完成，請稍候再試！");
+    return;
+  }
+  
+  const prompt = `你是一位專業的私人財富管理顧問（Private Wealth Manager）與財務風控專家。以下是我目前的「個人資產戰情儀表板」真實數據，請幫我進行全盤檢視與診斷，並給予具體可執行的優化建議：
+
+【一、核心資產淨值與風控指標】
+- 實際資產淨值（Net Assets）：NT$ ${fmtInt(latestDataSummary.netAssets)}
+- 帳面總資產（Gross Assets）：NT$ ${fmtInt(latestDataSummary.grossAssets)}
+- 總負債金額（Total Debt）：NT$ ${fmtInt(-Math.abs(latestDataSummary.totalDebt))}
+- 核心投資槓桿倍數：${latestDataSummary.leverage.toFixed(3)}x（安全警戒上限設為 3.0x）
+- 資產負債比：${(latestDataSummary.debtRatio*100).toFixed(1)}%
+- 年度資產目標達成率：NT$ ${fmtInt(latestDataSummary.goal)}（目前已達成 ${(latestDataSummary.goalPct*100).toFixed(1)}%）
+
+【二、六大核心資產配置權重】
+- 台股帳面：NT$ ${fmtInt(latestDataSummary.aTwStock)} (佔流動配置 ${(latestDataSummary.aTwStock/latestDataSummary.totalAlloc*100).toFixed(1)}%)
+- 美股帳面：NT$ ${fmtInt(latestDataSummary.aUsStock)} (佔流動配置 ${(latestDataSummary.aUsStock/latestDataSummary.totalAlloc*100).toFixed(1)}%)
+- 幣圈帳面：NT$ ${fmtInt(latestDataSummary.aCrypto)} (佔流動配置 ${(latestDataSummary.aCrypto/latestDataSummary.totalAlloc*100).toFixed(1)}%)
+- 台幣現金：NT$ ${fmtInt(latestDataSummary.aCash)} (佔流動配置 ${(latestDataSummary.aCash/latestDataSummary.totalAlloc*100).toFixed(1)}%)
+- 美金部位：約 $${latestDataSummary.aUsdInUsd.toFixed(2)} USD (= NT$ ${fmtInt(latestDataSummary.aUsd)})
+- 應收外債：NT$ ${fmtInt(latestDataSummary.aForeign)}
+
+【三、台股前三大核心持股】
+${latestDataSummary.topTwStocks.map((s, idx) => `${idx+1}. ${s.name}：NT$ ${fmtInt(s.amount)} (佔台股部位 ${(s.weight*100).toFixed(1)}%)`).join('\n')}
+
+【四、主要負債結構】
+- 股票質借：NT$ ${fmtInt(-Math.abs(latestDataSummary.dStock))}
+- 銀行信貸：NT$ ${fmtInt(-Math.abs(latestDataSummary.dCredit))}
+- 借款（爸）：NT$ ${fmtInt(-Math.abs(latestDataSummary.dParents))}
+
+請你從以下三個面向為我深度剖析：
+1. 【資產配置與防禦力診斷】：目前的股、幣、現金與外幣比例是否均衡？現金流動性與防禦水位是否安全？
+2. 【槓桿與負債結構評估】：目前 ${latestDataSummary.leverage.toFixed(3)}x 的槓桿倍數與質借/信貸配置是否健康？在當前宏觀環境下有何潛在風險？
+3. 【衝刺年度資產目標戰略】：距離目標 NT$ ${fmtInt(latestDataSummary.goal)} 還剩下約 ${(100 - latestDataSummary.goalPct*100).toFixed(1)}%（約 NT$ ${fmtInt(Math.max(0, latestDataSummary.goal - latestDataSummary.netAssets)/10000)} 萬），剩下的時間內，有什麼具體可執行的投資配置調整或策略，能助我穩健達標？
+
+請用專業、誠懇且條理分明的繁體中文為我解答！`;
+
+  navigator.clipboard.writeText(prompt).then(() => {
+    const toast = document.getElementById('aiToast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 5000);
+    window.open('https://gemini.google.com/app', '_blank');
+  }).catch(() => {
+    alert("已為您產生診斷提示詞！請複製後前往 Gemini 貼上：\n\n" + prompt);
+    window.open('https://gemini.google.com/app', '_blank');
+  });
+}
+
+// 年度資產目標：手動輸入，存在瀏覽器本機，跟即時淨資產比對算進度
+function initGoalInput(){
+  const saved = localStorage.getItem('assetGoalTarget');
+  const input = document.getElementById('goalInput');
+  input.value = saved ? saved : 8000000;
+}
+function onGoalInputChange(){
+  const input = document.getElementById('goalInput');
+  let v = parseFloat(input.value);
+  if(isNaN(v) || v <= 0) v = 8000000;
+  localStorage.setItem('assetGoalTarget', v);
+  updateGoalUI();
+}
+function updateGoalUI(){
+  const input = document.getElementById('goalInput');
+  let goalValue = parseFloat(input.value);
+  if(isNaN(goalValue) || goalValue <= 0) goalValue = 8000000;
+  const rawPct = lastNetAssets / goalValue;
+  const barPct = Math.max(0, Math.min(rawPct, 1));
+  lastGoalValue = goalValue;
+  lastGoalPct = rawPct;
+  document.getElementById('goalPct').innerHTML = fmtPct(rawPct);
+  document.getElementById('goalFill').style.width = (barPct*100).toFixed(1) + '%';
+}
+
+function setStatus(state, msg){
+  const dot = document.getElementById('statusDot');
+  const txt = document.getElementById('statusText');
+  dot.className = 'dot' + (state==='ok'?' ok':state==='err'?' err':'');
+  txt.textContent = msg;
+}
+
+async function fetchCsv(){
+  const bust = '&_ts=' + Date.now();
+  try{
+    const res = await fetch(CSV_URL + bust);
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    return await res.text();
+  }catch(primaryErr){
+    try{
+      const proxied = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(CSV_URL + bust);
+      const res2 = await fetch(proxied);
+      if(!res2.ok) throw new Error('HTTP ' + res2.status);
+      return await res2.text();
+    }catch(fallbackErr){
+      throw primaryErr;
+    }
+  }
+}
+
+async function loadData(){
+  const icon = document.getElementById('refreshIcon');
+  icon.classList.add('spin');
+  document.getElementById('errBox').style.display='none';
+  setStatus('loading','載入中…');
+  try{
+    const text = await fetchCsv();
+    const parsed = Papa.parse(text, {skipEmptyLines:false});
+    render(parsed.data);
+    const now = new Date();
+    setStatus('ok', '已同步 · ' + now.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'}));
+    document.getElementById('dashboard').style.opacity = 1;
+  }catch(err){
+    setStatus('err','讀取失敗');
+    const box = document.getElementById('errBox');
+    box.style.display='block';
+    box.innerHTML = `<strong>無法讀取試算表資料</strong><br>
+      可能原因：網路暫時無法連線、或該試算表的「發布到網路」設定被關閉／變更。<br>
+      請確認試算表仍保持發布狀態，再按右上角「重新整理」重試。<br>
+      <span style="color:var(--text-faint)">錯誤訊息：${err.message}</span>`;
+  }finally{
+    icon.classList.remove('spin');
+  }
+}
+
+function render(data){
+  let r = 1;
+  twStocks = [];
+  while(safe(data,r,0) !== ''){
+    twStocks.push({
+      name: safe(data,r,0),
+      shares: parseNum(safe(data,r,1)),
+      price: parseNum(safe(data,r,2)),
+      amount: parseNum(safe(data,r,3)),
+      weight: parseNum(safe(data,r,4))
+    });
+    r++;
+  }
+  const twTotal = parseNum(safe(data,1,5));
+  const marginRatio = parseNum(safe(data,3,5));
+  
+  renderTwStocks();
+  document.getElementById('twTotal').innerHTML = fmtMoney(twTotal);
+  document.getElementById('marginRatio').innerHTML = (marginRatio*100).toFixed(1) + '%';
+
+  const aTwStock = parseNum(safe(data,1,8));
+  const aCrypto  = parseNum(safe(data,1,9));
+  const aUsStock = parseNum(safe(data,1,10));
+  const aCash    = parseNum(safe(data,1,11));
+  const aForeign = parseNum(safe(data,1,13));
+
+  // ---- 美金：以 USD 為主，反推台幣（不要用試算表既有的台幣換算欄位） ----
+  const usFx = parseNum(safe(data,12,3)) || 32.20;
+  const aUsdInUsd = parseNum(safe(data,2,12));      // 原始 USD 現金部位（例：4000）
+  const aUsd = aUsdInUsd * usFx;                    // 用 USD × 匯率 反推台幣
+
+  document.getElementById('stTwStock').innerHTML = fmtMoney(aTwStock);
+  document.getElementById('stUsStock').innerHTML = fmtMoney(aUsStock);
+  document.getElementById('stCrypto').innerHTML  = fmtMoney(aCrypto);
+  document.getElementById('stCash').innerHTML    = fmtMoney(aCash);
+  document.getElementById('stForeign').innerHTML = fmtMoney(aForeign);
+  
+  // 美金等式排版：USD 原始金額 = 反推台幣
+  const usdCleanStr = fmtUsdDec(aUsdInUsd).replace(/<[^>]*>/g,'');
+  document.getElementById('stUsdMain').innerHTML = `<span style="color:var(--teal);">${usdCleanStr}</span> <span style="font-size:20px;color:var(--text-muted);font-weight:400;font-family:'Inter',sans-serif;">=</span> ${fmtMoney(aUsd)}`;
+  document.getElementById('stUsdSub').innerHTML  = `即時匯率 ${usFx.toFixed(2)}`;
+
+  document.getElementById('cashBankA').innerHTML = fmtMoney(parseNum(safe(data,3,11)));
+  document.getElementById('cashBankB').innerHTML = fmtMoney(parseNum(safe(data,5,11)));
+  document.getElementById('cashBankC').innerHTML = fmtMoney(parseNum(safe(data,7,11)));
+
+  const dStock = parseNum(safe(data,3,8));
+  const dCredit = parseNum(safe(data,3,9));
+  const dParents = parseNum(safe(data,3,10));
+  document.getElementById('debtBody').innerHTML = `
+    <tr><td>股票質借</td><td>${fmtMoney(-Math.abs(dStock))}</td></tr>
+    <tr><td>信貸</td><td>${fmtMoney(-Math.abs(dCredit))}</td></tr>
+    <tr><td>借款（爸）</td><td>${fmtMoney(-Math.abs(dParents))}</td></tr>
+  `;
+
+  let lr = 5;
+  loanList = [];
+  while(safe(data,lr,9) !== ''){
+    loanList.push({
+      start: excelDate(safe(data,lr,7)),
+      due: excelDate(safe(data,lr,8)),
+      dueRaw: safe(data,lr,8),
+      bank: safe(data,lr,9),
+      rate: parseNum(safe(data,lr,10))
+    });
+    lr++;
+  }
+  renderLoans();
+
+  const grossAssets = parseNum(safe(data,12,7));
+  const totalDebt = parseNum(safe(data,12,8));
+  const leverage = parseNum(safe(data,12,9));
+  const netAssets = parseNum(safe(data,14,7));
+  const debtRatio = parseNum(safe(data,14,8));
+  
+  const isNetNeg = netAssets < 0;
+  document.getElementById('netAssets').innerHTML = `<span class="${isNetNeg?'val-neg':''}">${isNetNeg?'-':''}${fmtInt(Math.abs(netAssets))}</span>`;
+  document.getElementById('grossAssets').innerHTML = fmtMoney(grossAssets);
+  document.getElementById('totalDebt').innerHTML = fmtMoney(-Math.abs(totalDebt));
+  document.getElementById('leverage').textContent = leverage.toFixed(3) + 'x';
+  document.getElementById('debtRatio').innerHTML = fmtPct(debtRatio);
+
+  lastNetAssets = netAssets;
+  updateGoalUI();
+
+  const levBarPct = Math.max(0, Math.min((leverage - 1.0) / (3.0 - 1.0), 1));
+  document.getElementById('leverageBarVal').textContent = leverage.toFixed(3) + 'x';
+  document.getElementById('leverageFill').style.width = (levBarPct * 100).toFixed(1) + '%';
+
+  const usDate = excelDate(safe(data,12,0));
+  const usUsd = parseNum(safe(data,12,1));
+  const usTwd = parseNum(safe(data,12,2));
+  const usInvested = parseNum(safe(data,12,4));
+  const usRoi = parseNum(safe(data,14,3));
+  const usProfit = parseNum(safe(data,14,4));
+  document.getElementById('usUpdated').textContent = '更新於 ' + usDate;
+  document.getElementById('usUsd').innerHTML = fmtUsd(usUsd);
+  document.getElementById('usTwd').innerHTML = fmtMoney(usTwd);
+  // 美股即時匯率修正為小數點後兩位
+  document.getElementById('usFx').textContent = usFx.toFixed(2);
+  document.getElementById('usInvested').innerHTML = fmtUsd(usInvested);
+  document.getElementById('usProfit').innerHTML = fmtUsd(usProfit);
+  document.getElementById('usRoi').innerHTML = fmtPct(usRoi);
+
+  let dr = 12, deposits = [];
+  while(safe(data,dr,5) !== ''){
+    deposits.push(parseNum(safe(data,dr,5)));
+    dr++;
+  }
+  document.getElementById('depositTags').innerHTML = deposits.map(d => `<span class="dep-tag">$${fmtInt(d)}</span>`).join('');
+
+  const cryptoDate = excelDate(safe(data,17,0));
+  const cryptoUsd = parseNum(safe(data,17,3));
+  const cryptoTwd = parseNum(safe(data,19,3));
+  const btc = parseNum(safe(data,22,3));
+  document.getElementById('cryptoUpdated').textContent = '更新於 ' + cryptoDate;
+  document.getElementById('cryptoUsd').innerHTML = fmtUsd(cryptoUsd);
+  document.getElementById('cryptoTwd').innerHTML = fmtMoney(cryptoTwd);
+  document.getElementById('btcAmt').textContent = btc.toFixed(6) + ' BTC';
+
+  let wr = 17;
+  cryptoWallets = [];
+  while(safe(data,wr,1) !== ''){
+    cryptoWallets.push({ name: safe(data,wr,1), value: parseNum(safe(data,wr,2)) });
+    wr++;
+  }
+  renderWallets();
+
+  document.getElementById('twUpdated').textContent = '';
+
+  const totalAlloc = aTwStock + aUsStock + aCrypto + aCash || 1;
+  
+  latestDataSummary = {
+    netAssets, grossAssets, totalDebt, leverage, debtRatio, goal: lastGoalValue,
+    goalPct: lastGoalPct, aTwStock, aUsStock, aCrypto, aCash, aUsd, aUsdInUsd, aForeign,
+    dStock, dCredit, dParents, totalAlloc,
+    topTwStocks: [...twStocks].sort((a,b) => b.amount - a.amount).slice(0, 3)
+  };
+
+  drawRing([
+    {label:'台股', value:aTwStock, color:COLORS.tw},
+    {label:'美股', value:aUsStock, color:COLORS.us},
+    {label:'幣圈', value:aCrypto, color:COLORS.crypto},
+    {label:'現金', value:aCash, color:COLORS.cash},
+  ]);
+}
+
+function drawRing(items){
+  const total = items.reduce((s,i) => s+i.value, 0) || 1;
+  const r = 60, cx = 80, cy = 80, sw = 16;
+  const circumference = 2*Math.PI*r;
+  let offset = 0;
+  
+  let circles = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#1B222D" stroke-width="${sw}"/>`;
+  
+  items.forEach((it) => {
+    const frac = it.value/total;
+    const len = frac*circumference;
+    const pctStr = ((it.value/total)*100).toFixed(1) + '%';
+    
+    circles += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${it.color}" stroke-width="${sw}"
+      stroke-dasharray="${len} ${circumference-len}" stroke-dashoffset="${-offset}"
+      transform="rotate(-90 ${cx} ${cy})" stroke-linecap="butt"
+      class="ring-path"
+      onmouseover="showHover('${it.label}', '${pctStr}', '${it.color}')"
+      onmouseout="resetHover()"/>`;
+    offset += len;
+  });
+
+  circles += `<g id="ringCenterText">
+    <text x="${cx}" y="${cy-4}" text-anchor="middle" fill="#EDEFF3" font-family="Source Serif 4, serif" font-size="16" font-weight="600" id="hoverTitle">配置</text>
+    <text x="${cx}" y="${cy+16}" text-anchor="middle" fill="#8993A4" font-family="IBM Plex Mono, monospace" font-size="11" id="hoverSub">ALLOC</text>
+  </g>`;
+  
+  document.getElementById('ringSvg').innerHTML = circles;
+
+  document.getElementById('legendBox').innerHTML = items.map(it => `
+    <div class="row" onmouseover="showHover('${it.label}', '${((it.value/total)*100).toFixed(1)}%', '${it.color}')" onmouseout="resetHover()">
+      <span class="swatch" style="background:${it.color}"></span>
+      <span>${it.label}</span>
+      <span class="pct">${((it.value/total)*100).toFixed(1)}%</span>
+    </div>
+  `).join('');
+}
+
+function showHover(label, pct, color){
+  const t = document.getElementById('hoverTitle');
+  const s = document.getElementById('hoverSub');
+  if(t && s){
+    t.textContent = label;
+    t.setAttribute('fill', color);
+    s.textContent = pct;
+    s.setAttribute('font-size', '14');
+    s.setAttribute('fill', '#EDEFF3');
+  }
+}
+
+function resetHover(){
+  const t = document.getElementById('hoverTitle');
+  const s = document.getElementById('hoverSub');
+  if(t && s){
+    t.textContent = '配置';
+    t.setAttribute('fill', '#EDEFF3');
+    s.textContent = 'ALLOC';
+    s.setAttribute('font-size', '11');
+    s.setAttribute('fill', '#8993A4');
+  }
+}
+
+initGoalInput();
+loadData();
+</script>
+</body>
+</html>
