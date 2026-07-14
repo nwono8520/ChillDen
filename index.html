@@ -522,12 +522,12 @@ const fmtMoney = n => {
 };
 const fmtUsd = n => {
   const isNeg = n < 0;
-  return `<span class="${isNeg ? 'val-neg' : ''}">${isNeg ? '-$' : '$'}${fmtInt(Math.abs(n))}</span>`;
+  return `<span class="${isNeg ? 'val-neg' : ''}">${isNeg ? '-$ ' : '$ '}${fmtInt(Math.abs(n))}</span>`;
 };
 // 保留小數點後兩位，專門給有小數精確度需求的欄位
 const fmtUsdDec = n => {
   const isNeg = n < 0;
-  return `<span class="${isNeg ? 'val-neg' : ''}">${isNeg ? '-$' : '$'}${Math.abs(n).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>`;
+  return `<span class="${isNeg ? 'val-neg' : ''}">${isNeg ? '-$ ' : '$ '}${Math.abs(n).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>`;
 };
 const fmtPct = n => {
   const isNeg = n < 0;
@@ -990,15 +990,15 @@ function render(data){
 
   document.getElementById('stTwStock').innerHTML = fmtMoney(aTwStock);
   const usStockCleanStr = fmtUsd(usUsd).replace(/<[^>]*>/g,'');
-  document.getElementById('stUsStock').innerHTML = `<span style="color:var(--teal);font-size:17px;">${usStockCleanStr}</span> <span style="font-size:17px;color:var(--text-muted);font-weight:400;font-family:'Inter',sans-serif;">=</span> <span style="font-family:'Source Serif 4',serif;font-size:24px;">${fmtMoney(aUsStock)}</span>`;
+  document.getElementById('stUsStock').innerHTML = `<span style="color:var(--teal);font-size:19px;">${usStockCleanStr}</span> <span style="font-size:17px;color:var(--text-muted);font-weight:400;font-family:'Inter',sans-serif;">=</span> <span style="font-family:'Source Serif 4',serif;font-size:24px;">${fmtMoney(aUsStock)}</span>`;
   const cryptoCleanStr = fmtUsd(cryptoUsd).replace(/<[^>]*>/g,'');
-  document.getElementById('stCrypto').innerHTML = `<span style="color:var(--teal);font-size:17px;">${cryptoCleanStr}</span> <span style="font-size:17px;color:var(--text-muted);font-weight:400;font-family:'Inter',sans-serif;">=</span> <span style="font-family:'Source Serif 4',serif;font-size:24px;">${fmtMoney(aCrypto)}</span>`;
+  document.getElementById('stCrypto').innerHTML = `<span style="color:var(--teal);font-size:19px;">${cryptoCleanStr}</span> <span style="font-size:17px;color:var(--text-muted);font-weight:400;font-family:'Inter',sans-serif;">=</span> <span style="font-family:'Source Serif 4',serif;font-size:24px;">${fmtMoney(aCrypto)}</span>`;
   document.getElementById('stCash').innerHTML    = fmtMoney(aCash);
   document.getElementById('stForeign').innerHTML = fmtMoney(aForeign);
   
   // 美金等式排版：USD 原始金額 = 反推台幣
   const usdCleanStr = fmtUsd(aUsdInUsd).replace(/<[^>]*>/g,'');
-  document.getElementById('stUsdMain').innerHTML = `<span style="color:var(--teal);font-size:17px;">${usdCleanStr}</span> <span style="font-size:17px;color:var(--text-muted);font-weight:400;font-family:'Inter',sans-serif;">=</span> <span style="font-family:'Source Serif 4',serif;font-size:24px;">${fmtMoney(aUsd)}</span>`;
+  document.getElementById('stUsdMain').innerHTML = `<span style="color:var(--teal);font-size:19px;">${usdCleanStr}</span> <span style="font-size:17px;color:var(--text-muted);font-weight:400;font-family:'Inter',sans-serif;">=</span> <span style="font-family:'Source Serif 4',serif;font-size:24px;">${fmtMoney(aUsd)}</span>`;
 
   document.getElementById('cashBankA').innerHTML = fmtMoney(parseNum(safe(data,3,12)));
   document.getElementById('cashBankB').innerHTML = fmtMoney(parseNum(safe(data,5,12)));
