@@ -225,6 +225,11 @@
     display:flex;align-items:center;gap:10px;color:var(--text);
   }
   .section-title .tag{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-faint);font-weight:400;}
+  .fx-badge{
+    margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:600;
+    color:var(--gold);background:rgba(212,175,106,.10);border:1px solid rgba(212,175,106,.35);
+    padding:4px 12px;border-radius:20px;letter-spacing:.02em;
+  }
   .cols2{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;}
   @media (max-width:900px){ .cols2{grid-template-columns:1fr;} }
 
@@ -378,7 +383,7 @@
       <div id="historyChartWrap"></div>
     </div>
 
-    <div class="section-title">每日變化 <span class="tag">淨資產漲跌</span><span class="tag" id="usdFxBadge" style="margin-left:auto;color:var(--gold);font-weight:600;"></span></div>
+    <div class="section-title">每日變化 <span class="tag">淨資產漲跌</span><span class="fx-badge" id="usdFxBadge"></span></div>
     <div class="grid4">
       <div class="stat"><div class="k">今日</div><div class="v" id="chgDay">—</div></div>
       <div class="stat"><div class="k">本週</div><div class="v" id="chgWeek">—</div></div>
@@ -984,15 +989,15 @@ function render(data){
   document.getElementById('usdFxBadge').textContent = `USD匯率 ${usFx.toFixed(2)}`;
 
   document.getElementById('stTwStock').innerHTML = fmtMoney(aTwStock);
-  const usStockCleanStr = fmtUsdDec(usUsd).replace(/<[^>]*>/g,'');
+  const usStockCleanStr = fmtUsd(usUsd).replace(/<[^>]*>/g,'');
   document.getElementById('stUsStock').innerHTML = `<span style="color:var(--teal);">${usStockCleanStr}</span> <span style="font-size:20px;color:var(--text-muted);font-weight:400;font-family:'Inter',sans-serif;">=</span> ${fmtMoney(aUsStock)}`;
-  const cryptoCleanStr = fmtUsdDec(cryptoUsd).replace(/<[^>]*>/g,'');
+  const cryptoCleanStr = fmtUsd(cryptoUsd).replace(/<[^>]*>/g,'');
   document.getElementById('stCrypto').innerHTML = `<span style="color:var(--teal);">${cryptoCleanStr}</span> <span style="font-size:20px;color:var(--text-muted);font-weight:400;font-family:'Inter',sans-serif;">=</span> ${fmtMoney(aCrypto)}`;
   document.getElementById('stCash').innerHTML    = fmtMoney(aCash);
   document.getElementById('stForeign').innerHTML = fmtMoney(aForeign);
   
   // 美金等式排版：USD 原始金額 = 反推台幣
-  const usdCleanStr = fmtUsdDec(aUsdInUsd).replace(/<[^>]*>/g,'');
+  const usdCleanStr = fmtUsd(aUsdInUsd).replace(/<[^>]*>/g,'');
   document.getElementById('stUsdMain').innerHTML = `<span style="color:var(--teal);">${usdCleanStr}</span> <span style="font-size:20px;color:var(--text-muted);font-weight:400;font-family:'Inter',sans-serif;">=</span> ${fmtMoney(aUsd)}`;
 
   document.getElementById('cashBankA').innerHTML = fmtMoney(parseNum(safe(data,3,12)));
