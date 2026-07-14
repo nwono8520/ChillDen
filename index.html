@@ -159,6 +159,21 @@
   .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:20px 0;}
   @media (max-width:900px){ .grid3{grid-template-columns:1fr 1fr;} }
   @media (max-width:560px){ .grid3{grid-template-columns:1fr;} }
+
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:20px 0;}
+  @media (max-width:900px){ .grid4{grid-template-columns:1fr 1fr;} }
+  @media (max-width:560px){ .grid4{grid-template-columns:1fr;} }
+
+  .history-toolbar{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;}
+  .range-btn{
+    background:var(--surface-alt);border:1px solid var(--line);color:var(--text-muted);
+    font-family:'IBM Plex Mono',monospace;font-size:11px;padding:6px 14px;border-radius:20px;
+    cursor:pointer;transition:all .15s;
+  }
+  .range-btn:hover{border-color:var(--gold-dim);color:var(--text);}
+  .range-btn.active{background:rgba(212,175,106,.15);border-color:var(--gold);color:var(--gold);font-weight:600;}
+  #historyChartWrap{width:100%;min-height:60px;}
+  #historyChartWrap svg{display:block;width:100%;height:auto;}
   
   .stat{
     background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;
@@ -169,6 +184,8 @@
   .stat .k{font-size:11px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;letter-spacing:.05em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
   
   .stat .v{font-family:'Source Serif 4',serif;font-size:26px;font-weight:600;color:#FFFFFF;margin:4px 0;line-height:1.2;}
+  .stat .v.pos{color:var(--teal);}
+  .stat .v.neg{color:var(--coral);}
   /* 美金專用等式 class，防手機版折行 */
   .stat .v.usd-eq { font-family: 'IBM Plex Mono', monospace; font-size: 22px; letter-spacing: -0.5px; }
   @media (max-width: 450px) { .stat .v.usd-eq { font-size: 17px !important; } }
@@ -343,6 +360,26 @@
           <div class="legend" id="legendBox"></div>
         </div>
       </div>
+    </div>
+
+    <div class="section-title">資產歷史 <span class="tag">淨資產走勢 · 每次成功讀取自動記錄當天數值</span></div>
+    <div class="card">
+      <div class="history-toolbar">
+        <button class="range-btn" data-range="7" onclick="setHistoryRange('7')">7天</button>
+        <button class="range-btn active" data-range="30" onclick="setHistoryRange('30')">30天</button>
+        <button class="range-btn" data-range="90" onclick="setHistoryRange('90')">90天</button>
+        <button class="range-btn" data-range="year" onclick="setHistoryRange('year')">今年</button>
+        <button class="range-btn" data-range="all" onclick="setHistoryRange('all')">All</button>
+      </div>
+      <div id="historyChartWrap"></div>
+    </div>
+
+    <div class="section-title">每日變化 <span class="tag">淨資產漲跌</span></div>
+    <div class="grid4">
+      <div class="stat"><div class="k">今日</div><div class="v" id="chgDay">—</div></div>
+      <div class="stat"><div class="k">本週</div><div class="v" id="chgWeek">—</div></div>
+      <div class="stat"><div class="k">本月</div><div class="v" id="chgMonth">—</div></div>
+      <div class="stat"><div class="k">今年</div><div class="v" id="chgYear">—</div></div>
     </div>
 
     <div class="grid3">
@@ -561,6 +598,8 @@ let isLoanSortAsc = true;
 let lastNetAssets = 0;
 let lastGoalPct = 0;
 let lastGoalValue = 8000000;
+let assetHistory = [];
+let historyRange = '30';
 let latestDataSummary = null; 
 
 // 開關隱私模式
@@ -708,6 +747,141 @@ function updateGoalUI(){
   document.getElementById('goalFill').style.width = (barPct*100).toFixed(1) + '%';
 }
 
+// ---- 資產歷史：本機自動記錄每天讀取到的淨資產，畫成走勢圖 ----
+const HISTORY_KEY = 'assetDashboardHistoryLog';
+
+function loadHistory(){
+  try{ return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); }catch(e){ return []; }
+}
+function saveHistory(arr){
+  try{ localStorage.setItem(HISTORY_KEY, JSON.stringify(arr)); }catch(e){}
+}
+function dateStrFrom(d){
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function recordSnapshot(netAssets, grossAssets, totalDebt){
+  let hist = loadHistory();
+  const ds = dateStrFrom(new Date());
+  const idx = hist.findIndex(h => h.date === ds);
+  const entry = { date: ds, netAssets, grossAssets, totalDebt };
+  if(idx >= 0) hist[idx] = entry; else hist.push(entry);
+  hist.sort((a,b) => a.date.localeCompare(b.date));
+  if(hist.length > 730) hist = hist.slice(hist.length - 730);
+  saveHistory(hist);
+  assetHistory = hist;
+}
+function closestOnOrBefore(hist, targetDate){
+  let best = null;
+  for(const h of hist){
+    const hd = new Date(h.date + 'T00:00:00');
+    if(hd.getTime() <= targetDate.getTime()){
+      if(!best || hd.getTime() > new Date(best.date+'T00:00:00').getTime()) best = h;
+    }
+  }
+  return best;
+}
+function setChangeCard(id, diff){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const isPos = diff >= 0;
+  el.className = 'v ' + (isPos ? 'pos' : 'neg');
+  el.innerHTML = `${isPos ? '▲' : '▼'} NT$ ${fmtInt(Math.abs(diff))}`;
+}
+function renderChanges(){
+  if(!assetHistory.length) return;
+  const latest = assetHistory[assetHistory.length - 1];
+  const today = new Date(); today.setHours(0,0,0,0);
+  const yesterday = new Date(today); yesterday.setDate(yesterday.getDate()-1);
+  const weekAgo = new Date(today); weekAgo.setDate(weekAgo.getDate()-7);
+  const monthAgo = new Date(today); monthAgo.setDate(monthAgo.getDate()-30);
+  const yearStart = new Date(today.getFullYear(), 0, 1);
+
+  const dayBase = closestOnOrBefore(assetHistory, yesterday) || assetHistory[0];
+  const weekBase = closestOnOrBefore(assetHistory, weekAgo) || assetHistory[0];
+  const monthBase = closestOnOrBefore(assetHistory, monthAgo) || assetHistory[0];
+  const yearBase = closestOnOrBefore(assetHistory, yearStart) || assetHistory[0];
+
+  setChangeCard('chgDay', latest.netAssets - dayBase.netAssets);
+  setChangeCard('chgWeek', latest.netAssets - weekBase.netAssets);
+  setChangeCard('chgMonth', latest.netAssets - monthBase.netAssets);
+  setChangeCard('chgYear', latest.netAssets - yearBase.netAssets);
+}
+function setHistoryRange(r){
+  historyRange = r;
+  document.querySelectorAll('.range-btn').forEach(b => b.classList.toggle('active', b.dataset.range === r));
+  renderHistoryChart();
+}
+function filterHistoryByRange(){
+  if(!assetHistory.length) return [];
+  const now = new Date();
+  if(historyRange === 'all') return assetHistory;
+  if(historyRange === 'year'){
+    const yearStartStr = `${now.getFullYear()}-01-01`;
+    return assetHistory.filter(h => h.date >= yearStartStr);
+  }
+  const days = parseInt(historyRange, 10);
+  const cutoff = new Date(now); cutoff.setDate(cutoff.getDate() - days);
+  const cutoffStr = dateStrFrom(cutoff);
+  return assetHistory.filter(h => h.date >= cutoffStr);
+}
+function renderHistoryChart(){
+  const wrap = document.getElementById('historyChartWrap');
+  if(!wrap) return;
+  const data = filterHistoryByRange();
+  if(data.length < 2){
+    wrap.innerHTML = `<div style="padding:34px 10px;text-align:center;color:var(--text-faint);font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.8;">
+      資料還太少，多打開幾天頁面後就會顯示走勢圖 📈<br>
+      <span style="font-size:11px;">（每次成功讀取試算表，會自動記錄當天的淨資產）</span>
+    </div>`;
+    return;
+  }
+  const W = 640, H = 190, padL = 78, padR = 16, padT = 20, padB = 28;
+  const values = data.map(d => d.netAssets);
+  let min = Math.min(...values), max = Math.max(...values);
+  if(min === max){ min -= 1; max += 1; }
+  const range = max - min;
+  const innerW = W - padL - padR;
+  const stepX = data.length > 1 ? innerW / (data.length - 1) : 0;
+  const xy = (i, v) => {
+    const x = padL + i * stepX;
+    const y = padT + (H - padT - padB) * (1 - (v - min) / range);
+    return [x, y];
+  };
+  let pathD = '';
+  data.forEach((d, i) => {
+    const [x, y] = xy(i, d.netAssets);
+    pathD += (i === 0 ? `M${x},${y}` : ` L${x},${y}`);
+  });
+  const [lastX] = xy(data.length-1, data[data.length-1].netAssets);
+  const [firstX] = xy(0, data[0].netAssets);
+  const areaD = pathD + ` L${lastX},${H-padB} L${firstX},${H-padB} Z`;
+
+  const labelIdxs = [...new Set([0, Math.floor((data.length-1)/2), data.length-1])];
+  let labels = '';
+  labelIdxs.forEach(i => {
+    const [x] = xy(i, data[i].netAssets);
+    labels += `<text x="${x}" y="${H-8}" text-anchor="middle" fill="#5B6472" font-family="IBM Plex Mono, monospace" font-size="10">${data[i].date.slice(5)}</text>`;
+  });
+
+  wrap.innerHTML = `
+    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+      <text x="4" y="${padT+2}" fill="#8993A4" font-family="IBM Plex Mono, monospace" font-size="10">NT$${fmtInt(max)}</text>
+      <text x="4" y="${H-padB+2}" fill="#8993A4" font-family="IBM Plex Mono, monospace" font-size="10">NT$${fmtInt(min)}</text>
+      <line x1="${padL}" y1="${padT}" x2="${W-padR}" y2="${padT}" stroke="#262E3A" stroke-width="1"/>
+      <line x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="#262E3A" stroke-width="1"/>
+      <defs>
+        <linearGradient id="histFillGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#D4AF6A" stop-opacity="0.35"/>
+          <stop offset="100%" stop-color="#D4AF6A" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <path d="${areaD}" fill="url(#histFillGrad)" stroke="none"/>
+      <path d="${pathD}" fill="none" stroke="#D4AF6A" stroke-width="2.2" stroke-linejoin="round"/>
+      ${labels}
+    </svg>
+  `;
+}
+
 function setStatus(state, msg){
   const dot = document.getElementById('statusDot');
   const txt = document.getElementById('statusText');
@@ -852,6 +1026,10 @@ function render(data){
   lastNetAssets = netAssets;
   updateGoalUI();
 
+  recordSnapshot(netAssets, grossAssets, totalDebt);
+  renderChanges();
+  renderHistoryChart();
+
   const levBarPct = Math.max(0, Math.min((leverage - 1.0) / (3.0 - 1.0), 1));
   document.getElementById('leverageBarVal').textContent = leverage.toFixed(3) + 'x';
   document.getElementById('leverageFill').style.width = (levBarPct * 100).toFixed(1) + '%';
@@ -976,6 +1154,8 @@ function resetHover(){
   }
 }
 
+assetHistory = loadHistory();
+renderHistoryChart();
 initGoalInput();
 loadData();
 </script>
