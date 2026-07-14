@@ -489,7 +489,7 @@
           <div class="chip"><div class="k">投報率</div><div class="v" id="usRoi">—</div></div>
         </div>
       </div>
-      <details class="stat-details">
+      <details class="stat-details" style="align-self:start;">
         <summary class="stat-summary simple-summary">
           <span>美股入金紀錄 <span style="font-size:10px;color:var(--gold);margin-left:2px;">[點擊展開]</span></span>
           <span class="simple-arrow">▾</span>
@@ -1192,6 +1192,12 @@ assetHistory = loadHistory();
 renderHistoryChart();
 initGoalInput();
 loadData();
+
+// 分頁切回來（或視窗重新取得焦點）時，自動重新整理一次資料
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState === 'visible') loadData();
+});
+window.addEventListener('focus', () => loadData());
 </script>
 </body>
 </html>
