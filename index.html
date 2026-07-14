@@ -253,7 +253,9 @@
   .wallet-list::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px;}
 
   .deposit-tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px;}
-  .dep-tag{font-family:'IBM Plex Mono',monospace;font-size:11px;background:var(--surface-alt);border:1px solid var(--line);padding:4px 9px;border-radius:6px;color:var(--text-muted);}
+  .dep-tag{font-family:'IBM Plex Mono',monospace;font-size:11px;background:var(--surface-alt);border:1px solid var(--line);padding:4px 9px;border-radius:6px;color:var(--text-muted);cursor:pointer;transition:all .15s;user-select:none;}
+  .dep-tag:hover{border-color:var(--gold-dim);color:var(--text);}
+  .dep-tag.expanded{background:rgba(212,175,106,.10);border-color:var(--gold);color:var(--gold);font-weight:600;}
 
   .timeline{position:relative;padding-left:20px;}
   .timeline::before{content:'';position:absolute;left:4px;top:4px;bottom:4px;width:1px;background:var(--line);}
@@ -892,6 +894,12 @@ function renderHistoryChart(){
   `;
 }
 
+function toggleDepositTag(el){
+  const expanded = el.classList.toggle('expanded');
+  const amountStr = '$ ' + fmtInt(parseFloat(el.dataset.amount));
+  el.textContent = expanded ? `${el.dataset.date} 入金 ${amountStr}` : amountStr;
+}
+
 function setStatus(state, msg){
   const dot = document.getElementById('statusDot');
   const txt = document.getElementById('statusText');
@@ -1067,10 +1075,12 @@ function render(data){
 
   let dr = 12, deposits = [];
   while(safe(data,dr,6) !== ''){
-    deposits.push(parseNum(safe(data,dr,6)));
+    deposits.push({ date: excelDate(safe(data,dr,5)), amount: parseNum(safe(data,dr,6)) });
     dr++;
   }
-  document.getElementById('depositTags').innerHTML = deposits.map(d => `<span class="dep-tag">$${fmtInt(d)}</span>`).join('');
+  document.getElementById('depositTags').innerHTML = deposits.map(d =>
+    `<span class="dep-tag" onclick="toggleDepositTag(this)" data-date="${d.date}" data-amount="${d.amount}">$ ${fmtInt(d.amount)}</span>`
+  ).join('');
 
   const cryptoDate = excelDate(safe(data,17,0));
   const cryptoTwd = parseNum(safe(data,19,3));
