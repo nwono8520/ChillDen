@@ -990,15 +990,15 @@ function render(data){
 
   document.getElementById('stTwStock').innerHTML = fmtMoney(aTwStock);
   const usStockCleanStr = fmtUsd(usUsd).replace(/<[^>]*>/g,'');
-  document.getElementById('stUsStock').innerHTML = `<span style="color:var(--teal);">${usStockCleanStr}</span> <span style="font-size:20px;color:var(--text-muted);font-weight:400;font-family:'Inter',sans-serif;">=</span> ${fmtMoney(aUsStock)}`;
+  document.getElementById('stUsStock').innerHTML = `<span style="color:var(--teal);">${usStockCleanStr}</span> <span style="font-size:20px;color:var(--text-muted);font-weight:400;font-family:'Inter',sans-serif;">=</span> <span style="font-family:'Source Serif 4',serif;font-size:21px;">${fmtMoney(aUsStock)}</span>`;
   const cryptoCleanStr = fmtUsd(cryptoUsd).replace(/<[^>]*>/g,'');
-  document.getElementById('stCrypto').innerHTML = `<span style="color:var(--teal);">${cryptoCleanStr}</span> <span style="font-size:20px;color:var(--text-muted);font-weight:400;font-family:'Inter',sans-serif;">=</span> ${fmtMoney(aCrypto)}`;
+  document.getElementById('stCrypto').innerHTML = `<span style="color:var(--teal);">${cryptoCleanStr}</span> <span style="font-size:20px;color:var(--text-muted);font-weight:400;font-family:'Inter',sans-serif;">=</span> <span style="font-family:'Source Serif 4',serif;font-size:21px;">${fmtMoney(aCrypto)}</span>`;
   document.getElementById('stCash').innerHTML    = fmtMoney(aCash);
   document.getElementById('stForeign').innerHTML = fmtMoney(aForeign);
   
   // 美金等式排版：USD 原始金額 = 反推台幣
   const usdCleanStr = fmtUsd(aUsdInUsd).replace(/<[^>]*>/g,'');
-  document.getElementById('stUsdMain').innerHTML = `<span style="color:var(--teal);">${usdCleanStr}</span> <span style="font-size:20px;color:var(--text-muted);font-weight:400;font-family:'Inter',sans-serif;">=</span> ${fmtMoney(aUsd)}`;
+  document.getElementById('stUsdMain').innerHTML = `<span style="color:var(--teal);">${usdCleanStr}</span> <span style="font-size:20px;color:var(--text-muted);font-weight:400;font-family:'Inter',sans-serif;">=</span> <span style="font-family:'Source Serif 4',serif;font-size:21px;">${fmtMoney(aUsd)}</span>`;
 
   document.getElementById('cashBankA').innerHTML = fmtMoney(parseNum(safe(data,3,12)));
   document.getElementById('cashBankB').innerHTML = fmtMoney(parseNum(safe(data,5,12)));
