@@ -160,9 +160,13 @@
   @media (max-width:900px){ .grid3{grid-template-columns:1fr 1fr;} }
   @media (max-width:560px){ .grid3{grid-template-columns:1fr;} }
 
-  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:20px 0;}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0;}
   @media (max-width:900px){ .grid4{grid-template-columns:1fr 1fr;} }
   @media (max-width:560px){ .grid4{grid-template-columns:1fr;} }
+  .grid4 .stat{padding:13px 16px;}
+  .grid4 .stat .k{font-size:11px;margin-bottom:3px;}
+  .grid4 .stat .v{font-size:17px;margin:0;line-height:1.3;}
+  .grid4 .stat .v .pct{font-size:12px;opacity:.75;margin-left:4px;font-weight:500;}
 
   .history-toolbar{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;}
   .range-btn{
@@ -176,19 +180,19 @@
   #historyChartWrap svg{display:block;width:100%;height:auto;}
   
   .stat{
-    background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;
+    background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;
     display:flex;flex-direction:column;justify-content:space-between;
     transition:border-color .2s, transform .2s;
   }
   .stat:hover{border-color:var(--gold-dim);transform:translateY(-2px);}
-  .stat .k{font-size:11px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;letter-spacing:.05em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .stat .k{font-size:11px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;letter-spacing:.05em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
   
-  .stat .v{font-family:'Source Serif 4',serif;font-size:26px;font-weight:600;color:#FFFFFF;margin:4px 0;line-height:1.2;}
+  .stat .v{font-family:'Source Serif 4',serif;font-size:24px;font-weight:600;color:#FFFFFF;margin:3px 0;line-height:1.2;}
   .stat .v.pos{color:var(--teal);}
   .stat .v.neg{color:var(--coral);}
   /* 美金專用等式 class，防手機版折行 */
-  .stat .v.usd-eq { font-family: 'IBM Plex Mono', monospace; font-size: 22px; letter-spacing: -0.5px; }
-  @media (max-width: 450px) { .stat .v.usd-eq { font-size: 17px !important; } }
+  .stat .v.usd-eq { font-family: 'IBM Plex Mono', monospace; font-size: 20px; letter-spacing: -0.5px; }
+  @media (max-width: 450px) { .stat .v.usd-eq { font-size: 15px !important; } }
   
   .stat .v-sub{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-muted);margin-top:auto;padding-top:4px;}
 
@@ -199,14 +203,14 @@
   details.stat-details:hover{border-color:var(--gold-dim);transform:translateY(-2px);}
   details.stat-details[open]{border-color:var(--gold-dim);background:var(--surface-alt);transform:none;}
   summary.stat-summary{
-    padding:20px;cursor:pointer;list-style:none;user-select:none;
+    padding:16px;cursor:pointer;list-style:none;user-select:none;
     display:flex;flex-direction:column;justify-content:space-between;
   }
   summary.stat-summary::-webkit-details-marker{display:none;}
-  summary.stat-summary .k{font-size:11px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;letter-spacing:.05em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
-  summary.stat-summary .v{font-family:'Source Serif 4',serif;font-size:26px;font-weight:600;color:#FFFFFF;margin:4px 0;line-height:1.2;}
+  summary.stat-summary .k{font-size:11px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;letter-spacing:.05em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+  summary.stat-summary .v{font-family:'Source Serif 4',serif;font-size:24px;font-weight:600;color:#FFFFFF;margin:3px 0;line-height:1.2;}
   summary.stat-summary::after{
-    content:'▾';float:right;color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:14px;transition:transform .2s;margin-top:-32px;
+    content:'▾';float:right;color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:14px;transition:transform .2s;margin-top:-28px;
   }
   details[open] summary.stat-summary::after{transform:rotate(180deg);}
   .cash-breakdown{
@@ -374,7 +378,7 @@
       <div id="historyChartWrap"></div>
     </div>
 
-    <div class="section-title">每日變化 <span class="tag">淨資產漲跌</span></div>
+    <div class="section-title">每日變化 <span class="tag">淨資產漲跌</span><span class="tag" id="usdFxBadge" style="margin-left:auto;color:var(--gold);font-weight:600;"></span></div>
     <div class="grid4">
       <div class="stat"><div class="k">今日</div><div class="v" id="chgDay">—</div></div>
       <div class="stat"><div class="k">本週</div><div class="v" id="chgWeek">—</div></div>
@@ -384,8 +388,8 @@
 
     <div class="grid3">
       <div class="stat"><div class="k">台股帳面</div><div class="v" id="stTwStock">—</div><div class="v-sub" style="visibility:hidden;">-</div></div>
-      <div class="stat"><div class="k">美股帳面</div><div class="v" id="stUsStock">—</div><div class="v-sub" style="visibility:hidden;">-</div></div>
-      <div class="stat"><div class="k">幣圈帳面</div><div class="v" id="stCrypto">—</div><div class="v-sub" style="visibility:hidden;">-</div></div>
+      <div class="stat"><div class="k">美股帳面</div><div class="v usd-eq" id="stUsStock">—</div><div class="v-sub" style="visibility:hidden;">-</div></div>
+      <div class="stat"><div class="k">幣圈帳面</div><div class="v usd-eq" id="stCrypto">—</div><div class="v-sub" style="visibility:hidden;">-</div></div>
       
       <details class="stat-details">
         <summary class="stat-summary">
@@ -401,9 +405,9 @@
       </details>
 
       <div class="stat">
-        <div class="k">美金部位</div>
+        <div class="k">美金現金</div>
         <div class="v usd-eq" id="stUsdMain">—</div>
-        <div class="v-sub" id="stUsdSub">即時匯率 —</div>
+        <div class="v-sub" style="visibility:hidden;">-</div>
       </div>
       
       <div class="stat">
@@ -780,12 +784,13 @@ function closestOnOrBefore(hist, targetDate){
   }
   return best;
 }
-function setChangeCard(id, diff){
+function setChangeCard(id, diff, base){
   const el = document.getElementById(id);
   if(!el) return;
   const isPos = diff >= 0;
+  const pct = base ? (diff / Math.abs(base) * 100) : 0;
   el.className = 'v ' + (isPos ? 'pos' : 'neg');
-  el.innerHTML = `${isPos ? '▲' : '▼'} NT$ ${fmtInt(Math.abs(diff))}`;
+  el.innerHTML = `${isPos ? '▲' : '▼'} NT$ ${fmtInt(Math.abs(diff))}<span class="pct">(${isPos?'+':'-'}${Math.abs(pct).toFixed(2)}%)</span>`;
 }
 function renderChanges(){
   if(!assetHistory.length) return;
@@ -801,10 +806,10 @@ function renderChanges(){
   const monthBase = closestOnOrBefore(assetHistory, monthAgo) || assetHistory[0];
   const yearBase = closestOnOrBefore(assetHistory, yearStart) || assetHistory[0];
 
-  setChangeCard('chgDay', latest.netAssets - dayBase.netAssets);
-  setChangeCard('chgWeek', latest.netAssets - weekBase.netAssets);
-  setChangeCard('chgMonth', latest.netAssets - monthBase.netAssets);
-  setChangeCard('chgYear', latest.netAssets - yearBase.netAssets);
+  setChangeCard('chgDay', latest.netAssets - dayBase.netAssets, dayBase.netAssets);
+  setChangeCard('chgWeek', latest.netAssets - weekBase.netAssets, weekBase.netAssets);
+  setChangeCard('chgMonth', latest.netAssets - monthBase.netAssets, monthBase.netAssets);
+  setChangeCard('chgYear', latest.netAssets - yearBase.netAssets, yearBase.netAssets);
 }
 function setHistoryRange(r){
   historyRange = r;
@@ -962,26 +967,33 @@ function render(data){
   document.getElementById('marginRatio').innerHTML = (marginRatio*100).toFixed(1) + '%';
 
   const aTwStock = parseNum(safe(data,1,9));
-  const aCrypto  = parseNum(safe(data,1,10));
-  const aUsStock = parseNum(safe(data,1,11));
   const aCash    = parseNum(safe(data,1,12));
   const aForeign = parseNum(safe(data,1,14));
 
-  // ---- 美金：以 USD 為主，反推台幣（不要用試算表既有的台幣換算欄位） ----
+  // ---- 美金／美股／幣圈：一律以 USD 原始數字為主，反推台幣（不使用試算表已換算好的台幣欄位）----
   const usFx = parseNum(safe(data,12,3)) || 32.20;
-  const aUsdInUsd = parseNum(safe(data,2,13));      // 原始 USD 現金部位（例：4000）
-  const aUsd = aUsdInUsd * usFx;                    // 用 USD × 匯率 反推台幣
+  const aUsdInUsd = parseNum(safe(data,2,13));      // 美金現金原始 USD（例：4000）
+  const aUsd = aUsdInUsd * usFx;                    // 美金現金反推台幣
+
+  const usUsd = parseNum(safe(data,12,1));          // 美股原始 USD 部位
+  const aUsStock = usUsd * usFx;                    // 美股反推台幣
+
+  const cryptoUsd = parseNum(safe(data,17,3));      // 幣圈原始 USD 總價值
+  const aCrypto = cryptoUsd * usFx;                 // 幣圈反推台幣
+
+  document.getElementById('usdFxBadge').textContent = `USD匯率 ${usFx.toFixed(2)}`;
 
   document.getElementById('stTwStock').innerHTML = fmtMoney(aTwStock);
-  document.getElementById('stUsStock').innerHTML = fmtMoney(aUsStock);
-  document.getElementById('stCrypto').innerHTML  = fmtMoney(aCrypto);
+  const usStockCleanStr = fmtUsdDec(usUsd).replace(/<[^>]*>/g,'');
+  document.getElementById('stUsStock').innerHTML = `<span style="color:var(--teal);">${usStockCleanStr}</span> <span style="font-size:20px;color:var(--text-muted);font-weight:400;font-family:'Inter',sans-serif;">=</span> ${fmtMoney(aUsStock)}`;
+  const cryptoCleanStr = fmtUsdDec(cryptoUsd).replace(/<[^>]*>/g,'');
+  document.getElementById('stCrypto').innerHTML = `<span style="color:var(--teal);">${cryptoCleanStr}</span> <span style="font-size:20px;color:var(--text-muted);font-weight:400;font-family:'Inter',sans-serif;">=</span> ${fmtMoney(aCrypto)}`;
   document.getElementById('stCash').innerHTML    = fmtMoney(aCash);
   document.getElementById('stForeign').innerHTML = fmtMoney(aForeign);
   
   // 美金等式排版：USD 原始金額 = 反推台幣
   const usdCleanStr = fmtUsdDec(aUsdInUsd).replace(/<[^>]*>/g,'');
   document.getElementById('stUsdMain').innerHTML = `<span style="color:var(--teal);">${usdCleanStr}</span> <span style="font-size:20px;color:var(--text-muted);font-weight:400;font-family:'Inter',sans-serif;">=</span> ${fmtMoney(aUsd)}`;
-  document.getElementById('stUsdSub').innerHTML  = `即時匯率 ${usFx.toFixed(2)}`;
 
   document.getElementById('cashBankA').innerHTML = fmtMoney(parseNum(safe(data,3,12)));
   document.getElementById('cashBankB').innerHTML = fmtMoney(parseNum(safe(data,5,12)));
@@ -1035,7 +1047,6 @@ function render(data){
   document.getElementById('leverageFill').style.width = (levBarPct * 100).toFixed(1) + '%';
 
   const usDate = excelDate(safe(data,12,0));
-  const usUsd = parseNum(safe(data,12,1));
   const usTwd = parseNum(safe(data,12,2));
   const usInvested = parseNum(safe(data,12,4));
   const usRoi = parseNum(safe(data,14,3));
@@ -1057,7 +1068,6 @@ function render(data){
   document.getElementById('depositTags').innerHTML = deposits.map(d => `<span class="dep-tag">$${fmtInt(d)}</span>`).join('');
 
   const cryptoDate = excelDate(safe(data,17,0));
-  const cryptoUsd = parseNum(safe(data,17,3));
   const cryptoTwd = parseNum(safe(data,19,3));
   const btc = parseNum(safe(data,22,3));
   document.getElementById('cryptoUpdated').textContent = '更新於 ' + cryptoDate;
