@@ -477,10 +477,14 @@
           <div class="chip"><div class="k">投報率</div><div class="v" id="usRoi">—</div></div>
         </div>
       </div>
-      <div class="card">
-        <div class="label" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">入金紀錄 (USD)</div>
-        <div class="deposit-tags" id="depositTags"></div>
-      </div>
+      <details class="stat-details">
+        <summary class="stat-summary">
+          <div class="k">
+            <span>美股入金紀錄 <span style="font-size:10px;color:var(--gold);margin-left:4px;">[點擊展開]</span></span>
+          </div>
+        </summary>
+        <div class="cash-breakdown" id="depositTags"></div>
+      </details>
     </div>
 
     <div class="section-title">幣圈資產 <span class="tag" id="cryptoUpdated"></span></div>
@@ -894,12 +898,6 @@ function renderHistoryChart(){
   `;
 }
 
-function toggleDepositTag(el){
-  const expanded = el.classList.toggle('expanded');
-  const amountStr = '$ ' + fmtInt(parseFloat(el.dataset.amount));
-  el.textContent = expanded ? `${el.dataset.date} 入金 ${amountStr}` : amountStr;
-}
-
 function setStatus(state, msg){
   const dot = document.getElementById('statusDot');
   const txt = document.getElementById('statusText');
@@ -1079,7 +1077,7 @@ function render(data){
     dr++;
   }
   document.getElementById('depositTags').innerHTML = deposits.map(d =>
-    `<span class="dep-tag" onclick="toggleDepositTag(this)" data-date="${d.date}" data-amount="${d.amount}">$ ${fmtInt(d.amount)}</span>`
+    `<div class="cash-item"><span>${d.date}</span><span>$ ${fmtInt(d.amount)}</span></div>`
   ).join('');
 
   const cryptoDate = excelDate(safe(data,17,0));
