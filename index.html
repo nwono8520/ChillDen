@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta name="robots" content="noindex, nofollow">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>資產戰情儀表板</title>
@@ -136,11 +135,12 @@
   .goal-bars { display:flex;flex-direction:column;gap:14px; }
   .goal-bar-wrap .k{font-size:11px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;}
   .goal-input{
-    background:transparent;border:none;border-bottom:1px dashed var(--gold-dim);
-    color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;
-    width:92px;padding:0 0 1px;margin-left:2px;-moz-appearance:textfield;
+    background:var(--surface-alt);border:1px solid var(--line);border-radius:6px;
+    color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;
+    width:96px;padding:4px 9px;margin-left:6px;text-align:right;
+    transition:border-color .15s;line-height:1.3;vertical-align:middle;box-sizing:border-box;
   }
-  .goal-input:focus{outline:none;border-bottom:1px solid var(--gold);}
+  .goal-input:focus{outline:none;border-color:var(--gold-dim);background:var(--surface);}
   .goal-input::-webkit-outer-spin-button,.goal-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
   .goal-track{height:6px;background:var(--surface-alt);border-radius:4px;overflow:hidden;border:1px solid var(--line);}
   .goal-fill{height:100%;background:linear-gradient(90deg,var(--gold-dim),var(--gold));border-radius:4px;transition:width .6s ease;}
@@ -318,7 +318,7 @@
         <div class="goal-bars">
           <div class="goal-bar-wrap">
             <div class="k">
-              <span>年度資產目標 NT$<input type="number" id="goalInput" class="goal-input" step="10000" oninput="onGoalInputChange()"></span>
+              <span>年度資產目標 NT$<input type="text" inputmode="numeric" id="goalInput" class="goal-input" oninput="onGoalInputChange()" onfocus="onGoalFocus()" onblur="onGoalBlur()"></span>
               <span id="goalPct" style="color:var(--gold);font-weight:600;">—</span>
             </div>
             <div class="goal-track"><div class="goal-fill" id="goalFill" style="width:0%"></div></div>
@@ -675,22 +675,31 @@ ${latestDataSummary.topTwStocks.map((s, idx) => `${idx+1}. ${s.name}：NT$ ${fmt
 }
 
 // 年度資產目標：手動輸入，存在瀏覽器本機，跟即時淨資產比對算進度
+function readGoalRaw(){
+  const input = document.getElementById('goalInput');
+  let v = parseFloat(String(input.value).replace(/,/g,''));
+  if(isNaN(v) || v <= 0) v = 8000000;
+  return v;
+}
 function initGoalInput(){
   const saved = localStorage.getItem('assetGoalTarget');
+  const v = saved ? parseFloat(saved) : 8000000;
+  document.getElementById('goalInput').value = fmtInt(v);
+}
+function onGoalFocus(){
   const input = document.getElementById('goalInput');
-  input.value = saved ? saved : 8000000;
+  input.value = String(readGoalRaw());
+}
+function onGoalBlur(){
+  const input = document.getElementById('goalInput');
+  input.value = fmtInt(readGoalRaw());
 }
 function onGoalInputChange(){
-  const input = document.getElementById('goalInput');
-  let v = parseFloat(input.value);
-  if(isNaN(v) || v <= 0) v = 8000000;
-  localStorage.setItem('assetGoalTarget', v);
+  localStorage.setItem('assetGoalTarget', readGoalRaw());
   updateGoalUI();
 }
 function updateGoalUI(){
-  const input = document.getElementById('goalInput');
-  let goalValue = parseFloat(input.value);
-  if(isNaN(goalValue) || goalValue <= 0) goalValue = 8000000;
+  const goalValue = readGoalRaw();
   const rawPct = lastNetAssets / goalValue;
   const barPct = Math.max(0, Math.min(rawPct, 1));
   lastGoalValue = goalValue;
@@ -707,21 +716,30 @@ function setStatus(state, msg){
 }
 
 async function fetchCsv(){
-  const bust = '&_ts=' + Date.now();
-  try{
-    const res = await fetch(CSV_URL + bust);
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    return await res.text();
-  }catch(primaryErr){
+  const bust = '_ts=' + Date.now();
+  const sep = CSV_URL.includes('?') ? '&' : '?';
+  const target = CSV_URL + sep + bust;
+
+  const attempts = [
+    () => fetch(target),
+    () => fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(target)),
+    () => fetch('https://corsproxy.io/?url=' + encodeURIComponent(target)),
+    () => fetch('https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(target)),
+  ];
+
+  let lastErr = null;
+  for(const attempt of attempts){
     try{
-      const proxied = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(CSV_URL + bust);
-      const res2 = await fetch(proxied);
-      if(!res2.ok) throw new Error('HTTP ' + res2.status);
-      return await res2.text();
-    }catch(fallbackErr){
-      throw primaryErr;
+      const res = await attempt();
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const text = await res.text();
+      if(!text || text.trim() === '') throw new Error('回傳內容是空的');
+      return text;
+    }catch(err){
+      lastErr = err;
     }
   }
+  throw lastErr || new Error('所有連線方式皆失敗');
 }
 
 async function loadData(){
@@ -769,15 +787,15 @@ function render(data){
   document.getElementById('twTotal').innerHTML = fmtMoney(twTotal);
   document.getElementById('marginRatio').innerHTML = (marginRatio*100).toFixed(1) + '%';
 
-  const aTwStock = parseNum(safe(data,1,8));
-  const aCrypto  = parseNum(safe(data,1,9));
-  const aUsStock = parseNum(safe(data,1,10));
-  const aCash    = parseNum(safe(data,1,11));
-  const aForeign = parseNum(safe(data,1,13));
+  const aTwStock = parseNum(safe(data,1,9));
+  const aCrypto  = parseNum(safe(data,1,10));
+  const aUsStock = parseNum(safe(data,1,11));
+  const aCash    = parseNum(safe(data,1,12));
+  const aForeign = parseNum(safe(data,1,14));
 
   // ---- 美金：以 USD 為主，反推台幣（不要用試算表既有的台幣換算欄位） ----
   const usFx = parseNum(safe(data,12,3)) || 32.20;
-  const aUsdInUsd = parseNum(safe(data,2,12));      // 原始 USD 現金部位（例：4000）
+  const aUsdInUsd = parseNum(safe(data,2,13));      // 原始 USD 現金部位（例：4000）
   const aUsd = aUsdInUsd * usFx;                    // 用 USD × 匯率 反推台幣
 
   document.getElementById('stTwStock').innerHTML = fmtMoney(aTwStock);
@@ -791,13 +809,13 @@ function render(data){
   document.getElementById('stUsdMain').innerHTML = `<span style="color:var(--teal);">${usdCleanStr}</span> <span style="font-size:20px;color:var(--text-muted);font-weight:400;font-family:'Inter',sans-serif;">=</span> ${fmtMoney(aUsd)}`;
   document.getElementById('stUsdSub').innerHTML  = `即時匯率 ${usFx.toFixed(2)}`;
 
-  document.getElementById('cashBankA').innerHTML = fmtMoney(parseNum(safe(data,3,11)));
-  document.getElementById('cashBankB').innerHTML = fmtMoney(parseNum(safe(data,5,11)));
-  document.getElementById('cashBankC').innerHTML = fmtMoney(parseNum(safe(data,7,11)));
+  document.getElementById('cashBankA').innerHTML = fmtMoney(parseNum(safe(data,3,12)));
+  document.getElementById('cashBankB').innerHTML = fmtMoney(parseNum(safe(data,5,12)));
+  document.getElementById('cashBankC').innerHTML = fmtMoney(parseNum(safe(data,7,12)));
 
-  const dStock = parseNum(safe(data,3,8));
-  const dCredit = parseNum(safe(data,3,9));
-  const dParents = parseNum(safe(data,3,10));
+  const dStock = parseNum(safe(data,3,9));
+  const dCredit = parseNum(safe(data,3,10));
+  const dParents = parseNum(safe(data,3,11));
   document.getElementById('debtBody').innerHTML = `
     <tr><td>股票質借</td><td>${fmtMoney(-Math.abs(dStock))}</td></tr>
     <tr><td>信貸</td><td>${fmtMoney(-Math.abs(dCredit))}</td></tr>
@@ -806,23 +824,23 @@ function render(data){
 
   let lr = 5;
   loanList = [];
-  while(safe(data,lr,9) !== ''){
+  while(safe(data,lr,10) !== ''){
     loanList.push({
-      start: excelDate(safe(data,lr,7)),
-      due: excelDate(safe(data,lr,8)),
-      dueRaw: safe(data,lr,8),
-      bank: safe(data,lr,9),
-      rate: parseNum(safe(data,lr,10))
+      start: excelDate(safe(data,lr,8)),
+      due: excelDate(safe(data,lr,9)),
+      dueRaw: safe(data,lr,9),
+      bank: safe(data,lr,10),
+      rate: parseNum(safe(data,lr,11))
     });
     lr++;
   }
   renderLoans();
 
-  const grossAssets = parseNum(safe(data,12,7));
-  const totalDebt = parseNum(safe(data,12,8));
-  const leverage = parseNum(safe(data,12,9));
-  const netAssets = parseNum(safe(data,14,7));
-  const debtRatio = parseNum(safe(data,14,8));
+  const grossAssets = parseNum(safe(data,12,8));
+  const totalDebt = parseNum(safe(data,12,9));
+  const leverage = parseNum(safe(data,12,10));
+  const netAssets = parseNum(safe(data,14,8));
+  const debtRatio = parseNum(safe(data,14,9));
   
   const isNetNeg = netAssets < 0;
   document.getElementById('netAssets').innerHTML = `<span class="${isNetNeg?'val-neg':''}">${isNetNeg?'-':''}${fmtInt(Math.abs(netAssets))}</span>`;
@@ -854,8 +872,8 @@ function render(data){
   document.getElementById('usRoi').innerHTML = fmtPct(usRoi);
 
   let dr = 12, deposits = [];
-  while(safe(data,dr,5) !== ''){
-    deposits.push(parseNum(safe(data,dr,5)));
+  while(safe(data,dr,6) !== ''){
+    deposits.push(parseNum(safe(data,dr,6)));
     dr++;
   }
   document.getElementById('depositTags').innerHTML = deposits.map(d => `<span class="dep-tag">$${fmtInt(d)}</span>`).join('');
