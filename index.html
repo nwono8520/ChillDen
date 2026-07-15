@@ -323,6 +323,7 @@
   body.privacy-active #walletBody td:nth-child(2),
   body.privacy-active #debtBody td:nth-child(2),
   body.privacy-active #twTotal,
+  body.privacy-active .chart-privacy-num,
   body.privacy-active .dep-tag {
       filter: blur(6px);
       opacity: 0.6;
@@ -950,8 +951,8 @@ function renderHistoryChart(){
 
   wrap.innerHTML = `
     <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
-      <text x="4" y="${padT+2}" fill="${cc.muted}" font-family="IBM Plex Mono, monospace" font-size="10">NT$${fmtInt(max)}</text>
-      <text x="4" y="${H-padB+2}" fill="${cc.muted}" font-family="IBM Plex Mono, monospace" font-size="10">NT$${fmtInt(min)}</text>
+      <text x="4" y="${padT+2}" fill="${cc.muted}" font-family="IBM Plex Mono, monospace" font-size="10" class="chart-privacy-num">NT$${fmtInt(max)}</text>
+      <text x="4" y="${H-padB+2}" fill="${cc.muted}" font-family="IBM Plex Mono, monospace" font-size="10" class="chart-privacy-num">NT$${fmtInt(min)}</text>
       <line x1="${padL}" y1="${padT}" x2="${W-padR}" y2="${padT}" stroke="${cc.line}" stroke-width="1"/>
       <line x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="${cc.line}" stroke-width="1"/>
       <defs>
