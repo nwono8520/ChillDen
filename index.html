@@ -189,6 +189,26 @@
   .grid4 .stat .v .pct{font-size:12px;opacity:.75;margin-left:4px;font-weight:500;}
 
   .history-toolbar{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;}
+
+  .history-details{
+    background:var(--surface);border:1px solid var(--line);border-radius:12px;
+    position:relative;overflow:visible;transition:border-color .2s;
+  }
+  .history-details[open]{border-color:var(--gold-dim);}
+  .history-summary{
+    padding:12px 20px;cursor:pointer;list-style:none;user-select:none;
+    display:flex;justify-content:space-between;align-items:center;
+    font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-muted);
+    letter-spacing:.04em;
+  }
+  .history-summary::-webkit-details-marker{display:none;}
+  .history-summary:hover{color:var(--text);}
+  .history-panel{
+    position:absolute;top:calc(100% + 8px);left:0;right:0;z-index:45;
+    background:var(--surface-alt);border:1px solid var(--gold-dim);border-radius:12px;
+    box-shadow:0 20px 45px rgba(0,0,0,.5);
+    padding:20px;
+  }
   .range-btn{
     background:var(--surface-alt);border:1px solid var(--line);color:var(--text-muted);
     font-family:'IBM Plex Mono',monospace;font-size:11px;padding:6px 14px;border-radius:20px;
@@ -267,7 +287,13 @@
 
   /* 關鍵修正：解決手機版表格擠在一起的跑版問題 */
   .table-responsive-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
-  .table-responsive-wrapper table { min-width: 550px; } /* 強制寬度，不足時出現卷軸 */
+  .table-responsive-wrapper table { min-width: 480px; } /* 強制寬度，不足時出現卷軸 */
+  .tw-holdings-layout{display:flex;gap:26px;align-items:flex-start;}
+  .tw-ring-box{flex:0 0 auto;padding-top:6px;}
+  @media (max-width:900px){
+    .tw-holdings-layout{flex-direction:column;}
+    .tw-ring-box{width:100%;display:flex;justify-content:center;padding-top:18px;border-top:1px dashed var(--line);margin-top:6px;}
+  }
   
   table{width:100%;border-collapse:collapse;font-family:'IBM Plex Mono',monospace;font-size:13px; white-space:nowrap;}
   th{text-align:right;color:var(--text-muted);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.04em;padding:0 0 10px;border-bottom:1px solid var(--line);}
@@ -412,16 +438,22 @@
     </div>
 
     <div class="section-title">資產歷史 <span class="tag">淨資產走勢 · 每次成功讀取自動記錄當天數值</span></div>
-    <div class="card">
-      <div class="history-toolbar">
-        <button class="range-btn" data-range="7" onclick="setHistoryRange('7')">7天</button>
-        <button class="range-btn active" data-range="30" onclick="setHistoryRange('30')">30天</button>
-        <button class="range-btn" data-range="90" onclick="setHistoryRange('90')">90天</button>
-        <button class="range-btn" data-range="year" onclick="setHistoryRange('year')">今年</button>
-        <button class="range-btn" data-range="all" onclick="setHistoryRange('all')">All</button>
+    <details class="history-details">
+      <summary class="history-summary">
+        <span>點擊展開走勢圖</span>
+        <span class="simple-arrow">▾</span>
+      </summary>
+      <div class="history-panel">
+        <div class="history-toolbar">
+          <button class="range-btn" data-range="7" onclick="setHistoryRange('7')">7天</button>
+          <button class="range-btn active" data-range="30" onclick="setHistoryRange('30')">30天</button>
+          <button class="range-btn" data-range="90" onclick="setHistoryRange('90')">90天</button>
+          <button class="range-btn" data-range="year" onclick="setHistoryRange('year')">今年</button>
+          <button class="range-btn" data-range="all" onclick="setHistoryRange('all')">All</button>
+        </div>
+        <div id="historyChartWrap"></div>
       </div>
-      <div id="historyChartWrap"></div>
-    </div>
+    </details>
 
     <div class="section-title">每日變化 <span class="tag">淨資產漲跌</span><span class="fx-badge" id="usdFxBadge"></span></div>
     <div class="grid4">
@@ -481,24 +513,34 @@
     </div>
 
     <div class="section-title">台股持股 <span class="tag" id="twUpdated"></span></div>
-    <div class="card table-responsive-wrapper">
-      <table>
-        <thead>
-          <tr>
-            <th>標的</th>
-            <th>張數</th>
-            <th>股價</th>
-            <th style="color:var(--gold);cursor:pointer;user-select:none;" onclick="toggleTwSort()" title="點擊依金額切換高低排序">
-              金額 (NT$) <span id="twSortArrow" style="font-size:10px;margin-left:4px;">▼</span>
-            </th>
-            <th>持股權重</th>
-          </tr>
-        </thead>
-        <tbody id="twTableBody"></tbody>
-        <tfoot>
-          <tr class="foot-row"><td>台股帳面價值合計</td><td colspan="2"></td><td id="twTotal">—</td><td>借貸維持率 <span class="pill ok" id="marginRatio">—</span></td></tr>
-        </tfoot>
-      </table>
+    <div class="card" style="padding:24px 16px;">
+      <div class="tw-holdings-layout">
+        <div class="table-responsive-wrapper" style="flex:1 1 auto;min-width:0;">
+          <table>
+            <thead>
+              <tr>
+                <th>標的</th>
+                <th>張數</th>
+                <th>股價</th>
+                <th style="color:var(--gold);cursor:pointer;user-select:none;" onclick="toggleTwSort()" title="點擊依金額切換高低排序">
+                  金額 (NT$) <span id="twSortArrow" style="font-size:10px;margin-left:4px;">▼</span>
+                </th>
+                <th>持股權重</th>
+              </tr>
+            </thead>
+            <tbody id="twTableBody"></tbody>
+            <tfoot>
+              <tr class="foot-row"><td>台股帳面價值合計</td><td colspan="2"></td><td id="twTotal">—</td><td>借貸維持率 <span class="pill ok" id="marginRatio">—</span></td></tr>
+            </tfoot>
+          </table>
+        </div>
+        <div class="tw-ring-box">
+          <div class="ring-box">
+            <svg width="150" height="150" viewBox="0 0 160 160" id="stockRingSvg"></svg>
+            <div class="legend" id="stockLegendBox"></div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="section-title">美股 <span class="tag" id="usUpdated"></span></div>
@@ -682,7 +724,13 @@ function toggleTheme(){
       {label:'美股', value:latestDataSummary.aUsStock, color:COLORS.us},
       {label:'幣圈', value:latestDataSummary.aCrypto, color:COLORS.crypto},
       {label:'現金', value:latestDataSummary.aCash, color:COLORS.cash},
-    ]);
+    ], { svg:'ringSvg', legend:'legendBox', title:'hoverTitle', sub:'hoverSub', amount:'hoverAmount', defTitle:'配置', defSub:'ALLOC' });
+
+    const STOCK_PALETTE = ['#D4AF6A','#4FBF9F','#7DA6E0','#C88BC4','#E2685E','#8FD14F','#E0B84F','#5FA8D3','#B98FE0','#6FD3C7'];
+    drawRing(
+      twStocks.map((s,i) => ({ label:s.name, value:s.amount, color:STOCK_PALETTE[i % STOCK_PALETTE.length] })),
+      { svg:'stockRingSvg', legend:'stockLegendBox', title:'stockHoverTitle', sub:'stockHoverSub', amount:'stockHoverAmount', defTitle:'台股', defSub:'配置' }
+    );
   }
 }
 
@@ -1182,10 +1230,16 @@ function render(data){
     {label:'美股', value:aUsStock, color:COLORS.us},
     {label:'幣圈', value:aCrypto, color:COLORS.crypto},
     {label:'現金', value:aCash, color:COLORS.cash},
-  ]);
+  ], { svg:'ringSvg', legend:'legendBox', title:'hoverTitle', sub:'hoverSub', amount:'hoverAmount', defTitle:'配置', defSub:'ALLOC' });
+
+  const STOCK_PALETTE = ['#D4AF6A','#4FBF9F','#7DA6E0','#C88BC4','#E2685E','#8FD14F','#E0B84F','#5FA8D3','#B98FE0','#6FD3C7'];
+  drawRing(
+    twStocks.map((s,i) => ({ label:s.name, value:s.amount, color:STOCK_PALETTE[i % STOCK_PALETTE.length] })),
+    { svg:'stockRingSvg', legend:'stockLegendBox', title:'stockHoverTitle', sub:'stockHoverSub', amount:'stockHoverAmount', defTitle:'台股', defSub:'配置' }
+  );
 }
 
-function drawRing(items){
+function drawRing(items, ids){
   const total = items.reduce((s,i) => s+i.value, 0) || 1;
   const cc = chartColors();
   const r = 60, cx = 80, cy = 80, sw = 16;
@@ -1198,25 +1252,27 @@ function drawRing(items){
     const frac = it.value/total;
     const len = frac*circumference;
     const pctStr = ((it.value/total)*100).toFixed(1) + '%';
+    const amtStr = 'NT$ ' + fmtInt(it.value);
     
     circles += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${it.color}" stroke-width="${sw}"
       stroke-dasharray="${len} ${circumference-len}" stroke-dashoffset="${-offset}"
       transform="rotate(-90 ${cx} ${cy})" stroke-linecap="butt"
       class="ring-path"
-      onmouseover="showHover('${it.label}', '${pctStr}', '${it.color}')"
-      onmouseout="resetHover()"/>`;
+      onmouseover="showHover('${it.label}', '${pctStr}', '${amtStr}', '${it.color}', '${ids.title}', '${ids.sub}', '${ids.amount}')"
+      onmouseout="resetHover('${ids.title}', '${ids.sub}', '${ids.amount}', '${ids.defTitle}', '${ids.defSub}')"/>`;
     offset += len;
   });
 
   circles += `<g id="ringCenterText">
-    <text x="${cx}" y="${cy-4}" text-anchor="middle" fill="${cc.text}" font-family="Source Serif 4, serif" font-size="16" font-weight="600" id="hoverTitle">配置</text>
-    <text x="${cx}" y="${cy+16}" text-anchor="middle" fill="${cc.muted}" font-family="IBM Plex Mono, monospace" font-size="11" id="hoverSub">ALLOC</text>
+    <text x="${cx}" y="${cy-10}" text-anchor="middle" fill="${cc.text}" font-family="Source Serif 4, serif" font-size="15" font-weight="600" id="${ids.title}">${ids.defTitle}</text>
+    <text x="${cx}" y="${cy+8}" text-anchor="middle" fill="${cc.muted}" font-family="IBM Plex Mono, monospace" font-size="11" id="${ids.sub}">${ids.defSub}</text>
+    <text x="${cx}" y="${cy+24}" text-anchor="middle" fill="${cc.faint}" font-family="IBM Plex Mono, monospace" font-size="10" id="${ids.amount}" class="chart-privacy-num"></text>
   </g>`;
   
-  document.getElementById('ringSvg').innerHTML = circles;
+  document.getElementById(ids.svg).innerHTML = circles;
 
-  document.getElementById('legendBox').innerHTML = items.map(it => `
-    <div class="row" onmouseover="showHover('${it.label}', '${((it.value/total)*100).toFixed(1)}%', '${it.color}')" onmouseout="resetHover()">
+  document.getElementById(ids.legend).innerHTML = items.map(it => `
+    <div class="row" onmouseover="showHover('${it.label}', '${((it.value/total)*100).toFixed(1)}%', 'NT$ ${fmtInt(it.value)}', '${it.color}', '${ids.title}', '${ids.sub}', '${ids.amount}')" onmouseout="resetHover('${ids.title}', '${ids.sub}', '${ids.amount}', '${ids.defTitle}', '${ids.defSub}')">
       <span class="swatch" style="background:${it.color}"></span>
       <span>${it.label}</span>
       <span class="pct">${((it.value/total)*100).toFixed(1)}%</span>
@@ -1224,9 +1280,10 @@ function drawRing(items){
   `).join('');
 }
 
-function showHover(label, pct, color){
-  const t = document.getElementById('hoverTitle');
-  const s = document.getElementById('hoverSub');
+function showHover(label, pct, amt, color, titleId, subId, amountId){
+  const t = document.getElementById(titleId);
+  const s = document.getElementById(subId);
+  const a = document.getElementById(amountId);
   if(t && s){
     t.textContent = label;
     t.setAttribute('fill', color);
@@ -1234,19 +1291,22 @@ function showHover(label, pct, color){
     s.setAttribute('font-size', '14');
     s.setAttribute('fill', chartColors().text);
   }
+  if(a){ a.textContent = amt; }
 }
 
-function resetHover(){
-  const t = document.getElementById('hoverTitle');
-  const s = document.getElementById('hoverSub');
+function resetHover(titleId, subId, amountId, defTitle, defSub){
+  const t = document.getElementById(titleId);
+  const s = document.getElementById(subId);
+  const a = document.getElementById(amountId);
+  const cc = chartColors();
   if(t && s){
-    const cc = chartColors();
-    t.textContent = '配置';
+    t.textContent = defTitle;
     t.setAttribute('fill', cc.text);
-    s.textContent = 'ALLOC';
+    s.textContent = defSub;
     s.setAttribute('font-size', '11');
     s.setAttribute('fill', cc.muted);
   }
+  if(a){ a.textContent = ''; }
 }
 
 initTheme();
