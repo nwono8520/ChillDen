@@ -218,6 +218,14 @@
   .range-btn.active{background:rgba(212,175,106,.15);border-color:var(--gold);color:var(--gold);font-weight:600;}
   #historyChartWrap{width:100%;min-height:60px;}
   #historyChartWrap svg{display:block;width:100%;height:auto;}
+  .hist-tooltip{
+    position:absolute;pointer-events:none;z-index:20;display:none;
+    background:var(--surface);border:1px solid var(--gold-dim);border-radius:8px;
+    padding:8px 12px;font-family:'IBM Plex Mono',monospace;font-size:11px;
+    color:var(--text);box-shadow:0 12px 28px rgba(0,0,0,.4);white-space:nowrap;
+  }
+  .hist-tooltip .tt-date{color:var(--text-muted);margin-bottom:4px;font-size:10.5px;}
+  .hist-tooltip .tt-value{color:var(--gold);font-weight:600;font-size:13px;}
   
   .stat{
     background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;
@@ -998,22 +1006,86 @@ function renderHistoryChart(){
   });
 
   wrap.innerHTML = `
-    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
-      <text x="4" y="${padT+2}" fill="${cc.muted}" font-family="IBM Plex Mono, monospace" font-size="10" class="chart-privacy-num">NT$${fmtInt(max)}</text>
-      <text x="4" y="${H-padB+2}" fill="${cc.muted}" font-family="IBM Plex Mono, monospace" font-size="10" class="chart-privacy-num">NT$${fmtInt(min)}</text>
-      <line x1="${padL}" y1="${padT}" x2="${W-padR}" y2="${padT}" stroke="${cc.line}" stroke-width="1"/>
-      <line x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="${cc.line}" stroke-width="1"/>
-      <defs>
-        <linearGradient id="histFillGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="${cc.gold}" stop-opacity="0.35"/>
-          <stop offset="100%" stop-color="${cc.gold}" stop-opacity="0"/>
-        </linearGradient>
-      </defs>
-      <path d="${areaD}" fill="url(#histFillGrad)" stroke="none"/>
-      <path d="${pathD}" fill="none" stroke="${cc.gold}" stroke-width="2.2" stroke-linejoin="round"/>
-      ${labels}
-    </svg>
+    <div style="position:relative;" id="histChartOuter">
+      <svg id="histSvg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="display:block;width:100%;height:auto;">
+        <text x="4" y="${padT+2}" fill="${cc.muted}" font-family="IBM Plex Mono, monospace" font-size="10" class="chart-privacy-num">NT$${fmtInt(max)}</text>
+        <text x="4" y="${H-padB+2}" fill="${cc.muted}" font-family="IBM Plex Mono, monospace" font-size="10" class="chart-privacy-num">NT$${fmtInt(min)}</text>
+        <line x1="${padL}" y1="${padT}" x2="${W-padR}" y2="${padT}" stroke="${cc.line}" stroke-width="1"/>
+        <line x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="${cc.line}" stroke-width="1"/>
+        <defs>
+          <linearGradient id="histFillGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="${cc.gold}" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="${cc.gold}" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path d="${areaD}" fill="url(#histFillGrad)" stroke="none"/>
+        <path d="${pathD}" fill="none" stroke="${cc.gold}" stroke-width="2.2" stroke-linejoin="round"/>
+        ${labels}
+        <g id="histCursorGroup" style="display:none;">
+          <line id="histCursorLine" x1="0" y1="${padT}" x2="0" y2="${H-padB}" stroke="${cc.muted}" stroke-width="1" stroke-dasharray="4 3"/>
+          <circle id="histCursorDot" cx="0" cy="0" r="4" fill="${cc.gold}" stroke="${cc.track}" stroke-width="2"/>
+        </g>
+      </svg>
+      <div id="histTooltip" class="hist-tooltip chart-privacy-num"></div>
+    </div>
   `;
+
+  attachHistoryChartInteraction(data, xy, W, H, padL, padR);
+}
+
+function formatWeekdayDate(dateStr){
+  const WEEKDAYS = ['週日','週一','週二','週三','週四','週五','週六'];
+  const [y,m,d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, m-1, d);
+  return `${WEEKDAYS[dt.getDay()]}, ${y}年${m}月${d}日`;
+}
+
+function attachHistoryChartInteraction(data, xy, W, H, padL, padR){
+  const outer = document.getElementById('histChartOuter');
+  const cursorGroup = document.getElementById('histCursorGroup');
+  const cursorLine = document.getElementById('histCursorLine');
+  const cursorDot = document.getElementById('histCursorDot');
+  const tooltip = document.getElementById('histTooltip');
+  if(!outer || !cursorGroup || !tooltip) return;
+
+  const innerW = W - padL - padR;
+  const stepX = data.length > 1 ? innerW / (data.length - 1) : 0;
+
+  function idxFromClientX(clientX){
+    const rect = outer.getBoundingClientRect();
+    const relX = Math.min(Math.max(clientX - rect.left, 0), rect.width);
+    const viewX = rect.width ? (relX / rect.width) * W : 0;
+    let idx = Math.round((viewX - padL) / (stepX || 1));
+    return Math.max(0, Math.min(data.length - 1, idx));
+  }
+
+  function showAt(clientX){
+    const idx = idxFromClientX(clientX);
+    const d = data[idx];
+    const [px, py] = xy(idx, d.netAssets);
+    cursorGroup.style.display = 'block';
+    cursorLine.setAttribute('x1', px); cursorLine.setAttribute('x2', px);
+    cursorDot.setAttribute('cx', px); cursorDot.setAttribute('cy', py);
+
+    tooltip.innerHTML = `<div class="tt-date">${formatWeekdayDate(d.date)}</div><div class="tt-value">NT$ ${fmtInt(d.netAssets)}</div>`;
+    tooltip.style.display = 'block';
+    const leftPct = (px / W) * 100;
+    const topPct = (py / H) * 100;
+    tooltip.style.left = leftPct + '%';
+    tooltip.style.top = topPct + '%';
+    tooltip.style.transform = leftPct < 15 ? 'translate(0, -115%)' : leftPct > 85 ? 'translate(-100%, -115%)' : 'translate(-50%, -115%)';
+  }
+  function hideTooltip(){
+    cursorGroup.style.display = 'none';
+    tooltip.style.display = 'none';
+  }
+
+  outer.style.cursor = 'crosshair';
+  outer.addEventListener('mousemove', e => showAt(e.clientX));
+  outer.addEventListener('mouseleave', hideTooltip);
+  outer.addEventListener('touchstart', e => { if(e.touches[0]){ e.preventDefault(); showAt(e.touches[0].clientX); } }, {passive:false});
+  outer.addEventListener('touchmove', e => { if(e.touches[0]){ e.preventDefault(); showAt(e.touches[0].clientX); } }, {passive:false});
+  outer.addEventListener('click', e => showAt(e.clientX));
 }
 
 function setStatus(state, msg){
@@ -1291,7 +1363,12 @@ function showHover(label, pct, amt, color, titleId, subId, amountId){
     s.setAttribute('font-size', '14');
     s.setAttribute('fill', chartColors().text);
   }
-  if(a){ a.textContent = amt; }
+  if(a){
+    a.textContent = amt;
+    // 未來金額位數變多時自動縮小字級，避免擠出圓環範圍
+    const size = amt.length > 15 ? 7.5 : amt.length > 12 ? 8.5 : amt.length > 10 ? 9.5 : 10;
+    a.setAttribute('font-size', size);
+  }
 }
 
 function resetHover(titleId, subId, amountId, defTitle, defSub){
