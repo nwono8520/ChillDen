@@ -1,0 +1,1033 @@
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --ink: #0F1517;
+    --surface: #171F22;
+    --surface-2: #1E282C;
+    --line: #2A363A;
+    --text: #F5F9FA;
+    --muted: #8CA0A5;
+    --mint: #52D6AE;
+    --mint-dim: #2E4A42;
+    --gold: #E3B55F;
+    --coral: #E8836B;
+    --font-display: 'Space Grotesk', system-ui, sans-serif;
+    --font-body: 'Inter', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  #sc-root {
+    background: var(--ink);
+    color: var(--text);
+    font-family: var(--font-body);
+    border-radius: 16px;
+    padding: 28px;
+    max-width: 980px;
+    margin: 0 auto;
+    box-sizing: border-box;
+    position: relative;
+  }
+  #sc-root * { box-sizing: border-box; }
+  #sc-root h1, #sc-root h2, #sc-root h3 { font-family: var(--font-display); margin: 0; }
+  #sc-root .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+  @media (max-width: 700px) {
+    #sc-root { padding: 18px 14px; border-radius: 12px; }
+  }
+
+  .sc-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    flex-wrap: wrap; gap: 12px; margin-bottom: 20px;
+  }
+  .sc-title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+  .sc-sub { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  @media (max-width: 700px) {
+    .sc-title { font-size: 19px; }
+    .sc-sub { font-size: 12px; }
+  }
+  .sc-rate-badge {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+    padding: 10px 14px; display: flex; align-items: center; gap: 10px; font-size: 13px;
+  }
+  .sc-rate-badge .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--mint); flex-shrink: 0; }
+  .sc-rate-badge .dot.stale { background: var(--coral); }
+  .sc-rate-val { font-family: var(--font-mono); color: var(--gold); font-weight: 600; }
+  .sc-refresh-btn {
+    background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px;
+    text-decoration: underline; padding: 0;
+  }
+  .sc-refresh-btn:hover { color: var(--text); }
+
+  .sc-total-banner {
+    background: linear-gradient(120deg, var(--mint-dim), var(--surface) 70%);
+    border: 1px solid var(--mint); border-radius: 16px; padding: 20px 22px;
+    display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 12px;
+    margin-bottom: 16px;
+  }
+  .sc-total-label { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .sc-total-figures { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .sc-total-usd { font-family: var(--font-mono); font-size: 22px; font-weight: 700; color: var(--text); }
+  .sc-total-twd { font-family: var(--font-mono); font-size: 22px; font-weight: 700; color: var(--gold); }
+  .sc-total-meta { font-size: 12px; color: var(--muted); }
+  @media (max-width: 700px) {
+    .sc-total-banner { flex-direction: column; align-items: flex-start; padding: 16px; }
+    .sc-total-usd, .sc-total-twd { font-size: 18px; }
+    .sc-total-figures { gap: 8px; }
+  }
+
+  .sc-summary {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 28px;
+  }
+  @media (max-width: 700px) { .sc-summary { grid-template-columns: repeat(2, 1fr); gap: 10px; } }
+  .sc-card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    padding: 16px 16px;
+  }
+  .sc-card.accent { background: linear-gradient(135deg, var(--mint-dim), var(--surface)); border-color: var(--mint); }
+  .sc-card-label { font-size: 12px; color: var(--muted); margin-bottom: 10px; white-space: nowrap; }
+  .sc-card-usd { font-family: var(--font-mono); font-size: 19px; font-weight: 700; color: var(--text); line-height: 1.3; }
+  .sc-card-twd { font-family: var(--font-mono); font-size: 14px; font-weight: 600; color: var(--gold); line-height: 1.3; margin-top: 4px; }
+  @media (max-width: 700px) {
+    .sc-card { padding: 12px; }
+    .sc-card-usd { font-size: 17px; }
+    .sc-card-twd { font-size: 13px; }
+  }
+
+  .sc-section-title {
+    font-size: 15px; font-weight: 600; margin: 28px 0 12px 0;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+  }
+  .sc-manage-toggle { font-size: 12px; color: var(--muted); cursor: pointer; text-decoration: underline; }
+
+  .sc-table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; -webkit-overflow-scrolling: touch; }
+  table.sc-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 680px; }
+  table.sc-table th {
+    text-align: left; font-weight: 500; color: var(--muted); font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.04em; padding: 12px 14px;
+    border-bottom: 1px solid var(--line); background: var(--surface);
+  }
+  table.sc-table td { padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--surface); vertical-align: middle; color: var(--text); }
+  table.sc-table tr:last-child td { border-bottom: none; }
+  table.sc-table tr:hover td { background: var(--surface-2); }
+  .sc-num { font-family: var(--font-mono); text-align: right; color: var(--text); font-weight: 500; }
+  .sc-tag { display: inline-block; border: 1px solid; border-radius: 6px; padding: 3px 9px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+  .sc-rate-cell { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+  .sc-rate-cell .sc-tiered-note { font-size: 10px; color: var(--mint); cursor: pointer; text-decoration: underline; background: none; border: none; padding: 0; font-family: var(--font-body); }
+  .sc-rate-cell .sc-tiered-note:hover { color: var(--text); }
+
+  .sc-tier-info-modal {
+    background: #171F22; border: 1px solid #2A363A; border-radius: 14px;
+    padding: 18px 20px; max-width: 360px; width: 100%; max-height: 80vh; overflow-y: auto;
+  }
+  .sc-tier-info-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; color: var(--text); }
+  .sc-tier-info-sub { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+  .sc-tier-info-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 10px; border-radius: 8px; background: var(--surface-2); margin-bottom: 6px;
+    font-family: var(--font-mono); font-size: 13px;
+  }
+  .sc-tier-info-row .range { color: var(--muted); }
+  .sc-tier-info-row .rate { color: var(--mint); font-weight: 700; }
+  .sc-tier-info-close { margin-top: 12px; width: 100%; }
+
+  .sc-mode-toggle { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .sc-mode-btn {
+    background: var(--surface-2); border: none; color: var(--muted); padding: 8px 12px;
+    font-size: 12px; cursor: pointer; font-family: var(--font-body); flex: 1;
+  }
+  .sc-mode-btn.active { background: var(--mint); color: #08211A; font-weight: 600; }
+
+  .sc-tier-panel {
+    margin-top: 10px; padding: 14px; background: var(--surface-2); border: 1px solid var(--line);
+    border-radius: 12px;
+  }
+  .sc-tier-panel-title { font-size: 12px; color: var(--muted); margin-bottom: 10px; line-height: 1.6; }
+  .sc-tier-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 13px; flex-wrap: wrap; }
+  .sc-tier-row span { color: var(--muted); font-size: 12px; }
+  .sc-tier-row input {
+    background: var(--surface); border: 1px solid var(--line); color: var(--text);
+    border-radius: 8px; padding: 7px 9px; font-size: 13px; font-family: var(--font-mono); width: 110px;
+  }
+  .sc-tier-preview { margin-top: 10px; font-size: 12px; color: var(--mint); }
+
+  .sc-icon-btn {
+    background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 6px;
+    width: 26px; height: 26px; cursor: pointer; font-size: 13px; line-height: 1; margin-left: 4px;
+  }
+  .sc-icon-btn:hover { color: var(--coral); border-color: var(--coral); }
+  .sc-icon-btn.edit:hover { color: var(--mint); border-color: var(--mint); }
+  @media (max-width: 700px) {
+    .sc-icon-btn { width: 32px; height: 32px; font-size: 15px; }
+  }
+
+  .sc-add-row { display: flex; flex-wrap: wrap; gap: 8px; padding: 14px; background: var(--surface); border: 1px dashed var(--line); border-radius: 14px; margin-top: 12px; align-items: center; }
+  .sc-add-row select, .sc-add-row input {
+    background: var(--surface-2); border: 1px solid var(--line); color: var(--text);
+    border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: var(--font-body);
+  }
+  .sc-add-row input[type=number] { width: 100px; font-family: var(--font-mono); }
+  .sc-add-row select { min-width: 110px; }
+  .sc-btn {
+    background: var(--mint); color: #08211A; border: none; border-radius: 8px;
+    padding: 9px 16px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: var(--font-body);
+  }
+  .sc-btn:hover { filter: brightness(1.08); }
+  .sc-btn.secondary { background: var(--surface-2); color: var(--text); border: 1px solid var(--line); }
+  @media (max-width: 700px) {
+    .sc-add-row { flex-direction: column; align-items: stretch; padding: 12px; }
+    .sc-add-row select, .sc-add-row input, .sc-add-row .sc-mode-toggle, .sc-add-row button {
+      width: 100%; font-size: 16px;
+    }
+    .sc-add-row input[type=number] { width: 100%; }
+  }
+
+  .sc-manage-panel { display: none; margin-top: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  .sc-manage-panel.open { display: block; }
+  .sc-manage-group { margin-bottom: 14px; }
+  .sc-manage-group:last-child { margin-bottom: 0; }
+  .sc-manage-group-title { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .sc-chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .sc-chip {
+    display: flex; align-items: center; gap: 6px; border: 1px solid;
+    border-radius: 20px; padding: 5px 8px 5px 12px; font-size: 12px; font-weight: 700;
+  }
+  .sc-chip button { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px; padding: 0 4px; }
+  .sc-chip button:hover { color: var(--coral); }
+  .sc-inline-add { display: flex; gap: 6px; margin-top: 8px; }
+  .sc-inline-add input { flex: 1; }
+  @media (max-width: 700px) {
+    .sc-inline-add input, .sc-inline-add button { font-size: 16px; }
+  }
+
+  .sc-empty { padding: 30px; text-align: center; color: var(--muted); font-size: 13px; }
+  .sc-footnote { font-size: 11px; color: var(--muted); margin-top: 16px; line-height: 1.6; }
+
+  .sc-modal-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    width: 100%; height: 100%;
+    background: rgba(5,8,9,0.82); display: none;
+    align-items: center; justify-content: center; z-index: 1000; padding: 20px;
+  }
+  .sc-modal-overlay.open { display: flex; }
+  .sc-modal {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+    padding: 22px; max-width: 480px; width: 100%; max-height: 88vh; overflow-y: auto;
+  }
+  .sc-modal-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; font-family: var(--font-display); color: var(--text); }
+  .sc-modal-field { margin-bottom: 12px; display: flex; flex-direction: column; gap: 6px; }
+  .sc-modal-field label { font-size: 12px; color: var(--muted); }
+  .sc-modal-field select, .sc-modal-field input {
+    background: var(--surface-2); border: 1px solid var(--line); color: var(--text);
+    border-radius: 8px; padding: 9px 10px; font-size: 16px; font-family: var(--font-body); width: 100%;
+  }
+  .sc-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+  @media (max-width: 700px) {
+    .sc-modal { padding: 18px; border-radius: 14px; }
+    .sc-modal-actions button { flex: 1; }
+  }
+</style>
+
+<div id="sc-root">
+  <div class="sc-header">
+    <div>
+      <div class="sc-title">穩定幣利息追蹤</div>
+      <div class="sc-sub">跨交易所部位一目瞭然,自動算日/週/月/年利息與台幣換算</div>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
+      <div class="sc-rate-badge">
+        <span class="dot" id="sc-rate-dot"></span>
+        <span>USD/TWD <span class="sc-rate-val mono" id="sc-rate-val">--</span></span>
+        <button class="sc-refresh-btn" id="sc-refresh-btn">更新匯率</button>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <a class="sc-btn secondary" href="asset-dashboard.html" style="padding:6px 12px; font-size:12px; text-decoration:none; display:inline-flex; align-items:center;">← 資產戰情儀表板</a>
+        <button class="sc-btn secondary" id="sc-export-btn" style="padding:6px 12px; font-size:12px;">匯出資料</button>
+        <button class="sc-btn secondary" id="sc-import-btn" style="padding:6px 12px; font-size:12px;">匯入資料</button>
+        <input type="file" id="sc-import-file" accept="application/json" style="display:none;">
+      </div>
+    </div>
+  </div>
+
+  <div class="sc-total-banner">
+    <div>
+      <div class="sc-total-label">穩定幣總投入</div>
+      <div class="sc-total-figures">
+        <span class="sc-total-usd mono" id="sc-total-usd">$0</span>
+        <span class="sc-total-twd mono" id="sc-total-twd">≈ NT$0</span>
+      </div>
+    </div>
+    <div class="sc-total-meta" id="sc-total-meta">尚未新增任何部位</div>
+  </div>
+
+  <div class="sc-summary">
+    <div class="sc-card">
+      <div class="sc-card-label">今日利息</div>
+      <div class="sc-card-usd mono" id="sc-sum-daily-usd">$0.00</div>
+      <div class="sc-card-twd mono" id="sc-sum-daily-twd">≈ NT$0</div>
+    </div>
+    <div class="sc-card">
+      <div class="sc-card-label">一週利息</div>
+      <div class="sc-card-usd mono" id="sc-sum-weekly-usd">$0.00</div>
+      <div class="sc-card-twd mono" id="sc-sum-weekly-twd">≈ NT$0</div>
+    </div>
+    <div class="sc-card">
+      <div class="sc-card-label">每月利息</div>
+      <div class="sc-card-usd mono" id="sc-sum-monthly-usd">$0.00</div>
+      <div class="sc-card-twd mono" id="sc-sum-monthly-twd">≈ NT$0</div>
+    </div>
+    <div class="sc-card accent">
+      <div class="sc-card-label">每年利息</div>
+      <div class="sc-card-usd mono" id="sc-sum-yearly-usd">$0.00</div>
+      <div class="sc-card-twd mono" id="sc-sum-yearly-twd">≈ NT$0</div>
+    </div>
+  </div>
+
+  <div class="sc-section-title">
+    <span>我的部位</span>
+    <span class="sc-manage-toggle" id="sc-manage-toggle">管理交易所 / 幣別</span>
+  </div>
+
+  <div class="sc-manage-panel" id="sc-manage-panel">
+    <div class="sc-manage-group">
+      <div class="sc-manage-group-title">交易所</div>
+      <div class="sc-chip-row" id="sc-exchange-chips"></div>
+      <div class="sc-inline-add">
+        <input type="text" id="sc-new-exchange" placeholder="新增交易所名稱,例如 Bybit">
+        <button class="sc-btn secondary" id="sc-add-exchange">新增</button>
+      </div>
+    </div>
+    <div class="sc-manage-group">
+      <div class="sc-manage-group-title">幣別</div>
+      <div class="sc-chip-row" id="sc-coin-chips"></div>
+      <div class="sc-inline-add">
+        <input type="text" id="sc-new-coin" placeholder="新增幣別,例如 USDE">
+        <button class="sc-btn secondary" id="sc-add-coin">新增</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sc-table-wrap">
+    <table class="sc-table">
+      <thead>
+        <tr>
+          <th>交易所</th><th>幣別</th><th style="text-align:right">金額</th><th style="text-align:right">年化利率</th>
+          <th style="text-align:right">日利息</th><th style="text-align:right">月利息</th><th style="text-align:right">年利息</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="sc-table-body"></tbody>
+    </table>
+  </div>
+
+  <div class="sc-add-row" id="sc-add-row">
+    <select id="sc-add-exchange-select"></select>
+    <select id="sc-add-coin-select"></select>
+    <input type="number" id="sc-add-amount" placeholder="金額" min="0" step="any">
+    <div class="sc-mode-toggle">
+      <button type="button" class="sc-mode-btn active" id="sc-mode-flat">單一利率</button>
+      <button type="button" class="sc-mode-btn" id="sc-mode-tiered">階梯利率</button>
+    </div>
+    <input type="number" id="sc-add-apy" placeholder="年化 %" min="0" step="any">
+    <button class="sc-btn secondary" id="sc-tier-edit-btn" style="display:none;">設定階梯</button>
+    <button class="sc-btn" id="sc-add-holding-btn">新增部位</button>
+  </div>
+
+  <div class="sc-tier-panel" id="sc-tier-panel" style="display:none;">
+    <div class="sc-tier-panel-title">依金額級距設定不同年化利率,參考交易所給的「預估 APR」級距表填入。最後一段的「上限」留空代表這個級距以上都算這個利率。</div>
+    <div id="sc-tier-rows"></div>
+    <button class="sc-btn secondary" id="sc-tier-add-row">+ 新增一段</button>
+    <div class="sc-tier-preview" id="sc-tier-preview"></div>
+  </div>
+
+  <div class="sc-footnote" id="sc-footnote">
+    利息估算方式:單一利率採單利,日利息 = 金額 × 年化 ÷ 365、週利息 = 金額 × 年化 ÷ 52、月利息 = 金額 × 年化 ÷ 12。階梯利率則依金額落在哪些級距分段計算後,再換算日/週/月利息。總投入是把所有部位金額直接加總,假設每種穩定幣都約等於 1 美元,實際可能有些微價差。實際交易所可能用不同天數或每日複利計算,僅供概算參考。資料只存在「這個裝置的這個瀏覽器」裡,不會自動同步到其他裝置;要換電腦或手機使用時,請先按「匯出資料」存成 json 檔,再到另一台裝置按「匯入資料」讀取,即可帶著同一份紀錄走。
+  </div>
+</div>
+
+<div class="sc-modal-overlay" id="sc-edit-overlay">
+  <div class="sc-modal" style="background:#171F22; border:1px solid #2A363A; border-radius:16px;">
+    <div class="sc-modal-title">編輯部位</div>
+    <div class="sc-modal-field">
+      <label>交易所</label>
+      <select id="sc-edit-exchange-select"></select>
+    </div>
+    <div class="sc-modal-field">
+      <label>幣別</label>
+      <select id="sc-edit-coin-select"></select>
+    </div>
+    <div class="sc-modal-field">
+      <label>金額</label>
+      <input type="number" id="sc-edit-amount" min="0" step="any">
+    </div>
+    <div class="sc-modal-field">
+      <label>利率模式</label>
+      <div class="sc-mode-toggle">
+        <button type="button" class="sc-mode-btn" id="sc-edit-mode-flat">單一利率</button>
+        <button type="button" class="sc-mode-btn" id="sc-edit-mode-tiered">階梯利率</button>
+      </div>
+    </div>
+    <div class="sc-modal-field" id="sc-edit-apy-field">
+      <label>年化利率 %</label>
+      <input type="number" id="sc-edit-apy" min="0" step="any">
+    </div>
+    <div class="sc-tier-panel" id="sc-edit-tier-panel" style="display:none; margin-top:0;">
+      <div class="sc-tier-panel-title">最後一段的「上限」留空代表這個級距以上都算這個利率。</div>
+      <div id="sc-edit-tier-rows"></div>
+      <button class="sc-btn secondary" id="sc-edit-tier-add-row">+ 新增一段</button>
+      <div class="sc-tier-preview" id="sc-edit-tier-preview"></div>
+    </div>
+    <div class="sc-modal-actions">
+      <button class="sc-btn secondary" id="sc-edit-cancel-btn">取消</button>
+      <button class="sc-btn" id="sc-edit-save-btn">儲存變更</button>
+    </div>
+  </div>
+</div>
+
+<div class="sc-modal-overlay" id="sc-tier-info-overlay">
+  <div class="sc-tier-info-modal">
+    <div class="sc-tier-info-title" id="sc-tier-info-title">級距明細</div>
+    <div class="sc-tier-info-sub" id="sc-tier-info-sub"></div>
+    <div id="sc-tier-info-rows"></div>
+    <button class="sc-btn secondary sc-tier-info-close" id="sc-tier-info-close-btn">關閉</button>
+  </div>
+</div>
+
+<script>
+(function() {
+  const STORE_KEY_HOLDINGS = 'sc:holdings';
+  const STORE_KEY_EXCHANGES = 'sc:exchanges';
+  const STORE_KEY_COINS = 'sc:coins';
+
+  const DEFAULT_EXCHANGES = ['OKX', 'Bybit'];
+  const DEFAULT_COINS = ['USDT', 'USDC', 'USDE', 'USD1'];
+
+  let holdings = [];
+  let exchanges = [];
+  let coins = [];
+  let usdToTwd = null;
+
+  let addMode = 'flat';
+  let tierDraft = [{ max: '', rate: '' }];
+
+  let editHoldingId = null;
+  let editMode = 'flat';
+  let editTierDraft = [{ max: '', rate: '' }];
+
+  // Two independent palettes so exchange colors never influence coin colors.
+  const EXCHANGE_PALETTE = [
+    { bg: 'rgba(232,181,95,0.16)',  fg: '#F0C878', border: 'rgba(232,181,95,0.5)' },
+    { bg: 'rgba(111,184,232,0.16)', fg: '#8FCBEE', border: 'rgba(111,184,232,0.5)' },
+    { bg: 'rgba(232,143,176,0.16)', fg: '#F0A9C4', border: 'rgba(232,143,176,0.5)' },
+    { bg: 'rgba(168,217,107,0.16)', fg: '#C1E896', border: 'rgba(168,217,107,0.5)' },
+    { bg: 'rgba(183,156,232,0.16)', fg: '#C6B2F0', border: 'rgba(183,156,232,0.5)' },
+    { bg: 'rgba(232,131,107,0.16)', fg: '#F3A691', border: 'rgba(232,131,107,0.5)' },
+    { bg: 'rgba(107,200,232,0.16)', fg: '#93D9F2', border: 'rgba(107,200,232,0.5)' },
+    { bg: 'rgba(232,196,107,0.16)', fg: '#F0D08F', border: 'rgba(232,196,107,0.5)' }
+  ];
+  const COIN_PALETTE = [
+    { bg: 'rgba(82,214,174,0.16)',  fg: '#7FE9C8', border: 'rgba(82,214,174,0.5)' },
+    { bg: 'rgba(214,150,232,0.16)', fg: '#E0B4F0', border: 'rgba(214,150,232,0.5)' },
+    { bg: 'rgba(232,196,107,0.16)', fg: '#F0D08F', border: 'rgba(232,196,107,0.5)' },
+    { bg: 'rgba(168,217,107,0.16)', fg: '#C1E896', border: 'rgba(168,217,107,0.5)' },
+    { bg: 'rgba(111,184,232,0.16)', fg: '#8FCBEE', border: 'rgba(111,184,232,0.5)' },
+    { bg: 'rgba(232,131,107,0.16)', fg: '#F3A691', border: 'rgba(232,131,107,0.5)' },
+    { bg: 'rgba(232,143,176,0.16)', fg: '#F0A9C4', border: 'rgba(232,143,176,0.5)' },
+    { bg: 'rgba(160,160,232,0.16)', fg: '#B8B8F0', border: 'rgba(160,160,232,0.5)' }
+  ];
+
+  const $ = (id) => document.getElementById(id);
+
+  function fmtUSD(n) {
+    return '$' + n.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  }
+  function fmtUSDInt(n) {
+    return '$' + Math.round(n).toLocaleString('en-US');
+  }
+  function fmtTWD(n) {
+    return 'NT$' + Math.round(n).toLocaleString('en-US');
+  }
+  function uid() {
+    return 'h_' + Math.random().toString(36).slice(2, 10);
+  }
+
+  // Color is assigned by each item's fixed position in its own managed list,
+  // so the same exchange/coin name always maps to the same color, and two
+  // different names won't collide as long as the list is shorter than the palette.
+  function exchangeColor(name) {
+    const idx = exchanges.indexOf(name);
+    return EXCHANGE_PALETTE[(idx < 0 ? 0 : idx) % EXCHANGE_PALETTE.length];
+  }
+  function coinColor(name) {
+    const idx = coins.indexOf(name);
+    return COIN_PALETTE[(idx < 0 ? 0 : idx) % COIN_PALETTE.length];
+  }
+  function tagHtml(str, color) {
+    return '<span class="sc-tag" style="background:' + color.bg + ';color:' + color.fg + ';border-color:' + color.border + ';">' + str + '</span>';
+  }
+
+  async function loadAll() {
+    try {
+      const h = localStorage.getItem(STORE_KEY_HOLDINGS);
+      holdings = h ? JSON.parse(h) : [];
+    } catch (e) { holdings = []; }
+    try {
+      const e = localStorage.getItem(STORE_KEY_EXCHANGES);
+      exchanges = e ? JSON.parse(e) : DEFAULT_EXCHANGES.slice();
+    } catch (e) { exchanges = DEFAULT_EXCHANGES.slice(); }
+    try {
+      const c = localStorage.getItem(STORE_KEY_COINS);
+      coins = c ? JSON.parse(c) : DEFAULT_COINS.slice();
+    } catch (e) { coins = DEFAULT_COINS.slice(); }
+  }
+
+  async function saveHoldings() {
+    try { localStorage.setItem(STORE_KEY_HOLDINGS, JSON.stringify(holdings)); }
+    catch (e) { console.error('save holdings failed', e); }
+  }
+  async function saveExchanges() {
+    try { localStorage.setItem(STORE_KEY_EXCHANGES, JSON.stringify(exchanges)); }
+    catch (e) { console.error('save exchanges failed', e); }
+  }
+  async function saveCoins() {
+    try { localStorage.setItem(STORE_KEY_COINS, JSON.stringify(coins)); }
+    catch (e) { console.error('save coins failed', e); }
+  }
+
+  function exportData() {
+    const payload = { holdings, exchanges, coins, exportedAt: new Date().toISOString() };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'stablecoin-data-' + new Date().toISOString().slice(0,10) + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function importData(file) {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const payload = JSON.parse(e.target.result);
+        if (!confirm('匯入將覆蓋目前這台裝置上的所有資料,確定要繼續嗎?')) return;
+        holdings = Array.isArray(payload.holdings) ? payload.holdings : [];
+        exchanges = Array.isArray(payload.exchanges) ? payload.exchanges : DEFAULT_EXCHANGES.slice();
+        coins = Array.isArray(payload.coins) ? payload.coins : DEFAULT_COINS.slice();
+        await saveHoldings(); await saveExchanges(); await saveCoins();
+        render();
+        alert('匯入成功');
+      } catch (err) {
+        alert('檔案格式錯誤,匯入失敗');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  async function fetchRate() {
+    const dot = $('sc-rate-dot');
+    const val = $('sc-rate-val');
+    try {
+      const res = await fetch('https://open.er-api.com/v6/latest/USD');
+      const data = await res.json();
+      if (data && data.rates && data.rates.TWD) {
+        usdToTwd = data.rates.TWD;
+        val.textContent = usdToTwd.toFixed(3);
+        dot.classList.remove('stale');
+      } else {
+        throw new Error('no TWD rate');
+      }
+    } catch (e) {
+      dot.classList.add('stale');
+      if (!usdToTwd) {
+        val.textContent = '手動輸入';
+        val.style.cursor = 'pointer';
+        val.title = '點擊手動輸入匯率';
+        val.onclick = () => {
+          const manual = prompt('無法自動取得匯率,請手動輸入 USD/TWD 匯率(例如 32.1):');
+          const num = parseFloat(manual);
+          if (!isNaN(num) && num > 0) {
+            usdToTwd = num;
+            val.textContent = num.toFixed(3);
+            render();
+          }
+        };
+      }
+    }
+    render();
+  }
+
+  function computeTieredYearly(amount, tiers) {
+    const sorted = tiers.slice().sort((a, b) => {
+      const am = (a.max === null || a.max === undefined) ? Infinity : a.max;
+      const bm = (b.max === null || b.max === undefined) ? Infinity : b.max;
+      return am - bm;
+    });
+    let remaining = amount;
+    let prevCap = 0;
+    let yearly = 0;
+    let lastRate = sorted.length ? sorted[sorted.length - 1].rate : 0;
+    for (const t of sorted) {
+      const cap = (t.max === null || t.max === undefined) ? Infinity : t.max;
+      const bracketSize = cap - prevCap;
+      const portion = Math.min(remaining, bracketSize);
+      if (portion > 0) {
+        yearly += portion * (t.rate / 100);
+        remaining -= portion;
+      }
+      prevCap = cap;
+      lastRate = t.rate;
+      if (remaining <= 0) break;
+    }
+    if (remaining > 0) {
+      yearly += remaining * (lastRate / 100);
+    }
+    return yearly;
+  }
+
+  function computeInterest(holding) {
+    let yearly;
+    if (holding.mode === 'tiered' && Array.isArray(holding.tiers) && holding.tiers.length) {
+      yearly = computeTieredYearly(holding.amount, holding.tiers);
+    } else {
+      yearly = holding.amount * (holding.apy / 100);
+    }
+    const monthly = yearly / 12;
+    const weekly = yearly / 52;
+    const daily = yearly / 365;
+    return { daily, weekly, monthly, yearly };
+  }
+
+  function tierBreakdownText(tiers) {
+    return tiers.slice().sort((a,b) => {
+      const am = (a.max===null||a.max===undefined)?Infinity:a.max;
+      const bm = (b.max===null||b.max===undefined)?Infinity:b.max;
+      return am-bm;
+    }).map((t,i,arr) => {
+      const from = i===0 ? 0 : (arr[i-1].max===null||arr[i-1].max===undefined ? '?' : arr[i-1].max);
+      const to = (t.max===null||t.max===undefined) ? '以上' : t.max;
+      return from + '~' + to + ': ' + t.rate + '%';
+    }).join(' / ');
+  }
+
+  function renderChips(containerId, list, onDelete, colorFn) {
+    const el = $(containerId);
+    el.innerHTML = '';
+    if (list.length === 0) {
+      el.innerHTML = '<span style="color:var(--muted);font-size:12px;">尚未新增</span>';
+      return;
+    }
+    list.forEach((item) => {
+      const c = colorFn(item);
+      const chip = document.createElement('span');
+      chip.className = 'sc-chip';
+      chip.style.background = c.bg;
+      chip.style.borderColor = c.border;
+      chip.innerHTML = '<span style="color:' + c.fg + ';">' + item + '</span>';
+      const btn = document.createElement('button');
+      btn.textContent = '✕';
+      btn.onclick = () => onDelete(item);
+      chip.appendChild(btn);
+      el.appendChild(chip);
+    });
+  }
+
+  function renderSelects() {
+    const exSel = $('sc-add-exchange-select');
+    const coinSel = $('sc-add-coin-select');
+    const prevEx = exSel.value;
+    const prevCoin = coinSel.value;
+    exSel.innerHTML = exchanges.map(e => '<option value="' + e + '">' + e + '</option>').join('');
+    coinSel.innerHTML = coins.map(c => '<option value="' + c + '">' + c + '</option>').join('');
+    if (exchanges.includes(prevEx)) exSel.value = prevEx;
+    if (coins.includes(prevCoin)) coinSel.value = prevCoin;
+    const addRow = $('sc-add-row');
+    if (exchanges.length === 0 || coins.length === 0) {
+      addRow.style.display = 'none';
+    } else {
+      addRow.style.display = 'flex';
+    }
+  }
+
+  function renderTable() {
+    const body = $('sc-table-body');
+    body.innerHTML = '';
+    if (holdings.length === 0) {
+      body.innerHTML = '<tr><td colspan="8" class="sc-empty">還沒有任何部位,從下面新增第一筆吧</td></tr>';
+    }
+    let sumDaily = 0, sumWeekly = 0, sumMonthly = 0, sumYearly = 0, totalInvested = 0;
+    holdings.forEach((h) => {
+      const { daily, weekly, monthly, yearly } = computeInterest(h);
+      sumDaily += daily; sumWeekly += weekly; sumMonthly += monthly; sumYearly += yearly;
+      totalInvested += h.amount;
+      const effectiveRate = h.amount > 0 ? (yearly / h.amount * 100) : 0;
+      let rateCell;
+      if (h.mode === 'tiered' && Array.isArray(h.tiers)) {
+        rateCell = '<div class="sc-rate-cell"><span>階梯 (~' + effectiveRate.toFixed(2) + '%)</span>' +
+          '<button type="button" class="sc-tiered-note" data-tier-info-id="' + h.id + '">級距明細 ⓘ</button></div>';
+      } else {
+        rateCell = '<div class="sc-rate-cell"><span>' + h.apy + '%</span></div>';
+      }
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>' + tagHtml(h.exchange, exchangeColor(h.exchange)) + '</td>' +
+        '<td>' + tagHtml(h.coin, coinColor(h.coin)) + '</td>' +
+        '<td class="sc-num">' + h.amount.toLocaleString('en-US', {maximumFractionDigits: 2}) + '</td>' +
+        '<td class="sc-num">' + rateCell + '</td>' +
+        '<td class="sc-num">' + fmtUSD(daily) + '</td>' +
+        '<td class="sc-num">' + fmtUSD(monthly) + '</td>' +
+        '<td class="sc-num">' + fmtUSD(yearly) + '</td>' +
+        '<td style="text-align:center; white-space:nowrap;">' +
+          '<button class="sc-icon-btn edit" data-edit-id="' + h.id + '" title="編輯">✎</button>' +
+          '<button class="sc-icon-btn" data-id="' + h.id + '" title="刪除">✕</button>' +
+        '</td>';
+      body.appendChild(tr);
+    });
+    body.querySelectorAll('button[data-id]').forEach(btn => {
+      btn.onclick = async () => {
+        if (!confirm('確定要刪除這筆部位嗎?')) return;
+        holdings = holdings.filter(h => h.id !== btn.dataset.id);
+        await saveHoldings();
+        render();
+      };
+    });
+    body.querySelectorAll('button[data-edit-id]').forEach(btn => {
+      btn.onclick = () => openEditModal(btn.dataset.editId);
+    });
+    body.querySelectorAll('button[data-tier-info-id]').forEach(btn => {
+      btn.onclick = () => openTierInfoModal(btn.dataset.tierInfoId);
+    });
+
+    $('sc-sum-daily-usd').textContent = fmtUSD(sumDaily);
+    $('sc-sum-daily-twd').textContent = usdToTwd ? '≈ ' + fmtTWD(sumDaily * usdToTwd) : '匯率載入中';
+    $('sc-sum-weekly-usd').textContent = fmtUSD(sumWeekly);
+    $('sc-sum-weekly-twd').textContent = usdToTwd ? '≈ ' + fmtTWD(sumWeekly * usdToTwd) : '匯率載入中';
+    $('sc-sum-monthly-usd').textContent = fmtUSD(sumMonthly);
+    $('sc-sum-monthly-twd').textContent = usdToTwd ? '≈ ' + fmtTWD(sumMonthly * usdToTwd) : '匯率載入中';
+    $('sc-sum-yearly-usd').textContent = fmtUSD(sumYearly);
+    $('sc-sum-yearly-twd').textContent = usdToTwd ? '≈ ' + fmtTWD(sumYearly * usdToTwd) : '匯率載入中';
+
+    $('sc-total-usd').textContent = fmtUSDInt(totalInvested);
+    $('sc-total-twd').textContent = usdToTwd ? '≈ ' + fmtTWD(totalInvested * usdToTwd) : '≈ 匯率載入中';
+    $('sc-total-meta').textContent = holdings.length === 0
+      ? '尚未新增任何部位'
+      : '共 ' + holdings.length + ' 筆部位,分散在 ' + new Set(holdings.map(h => h.exchange)).size + ' 個交易所';
+  }
+
+  function renderTierRowsGeneric(containerEl, draft, onUpdate) {
+    containerEl.innerHTML = '';
+    draft.forEach((row, idx) => {
+      const from = idx === 0 ? '0' : (draft[idx-1].max === '' ? '?' : draft[idx-1].max);
+      const div = document.createElement('div');
+      div.className = 'sc-tier-row';
+      div.innerHTML =
+        '<span>從 ' + from + ' 到</span>' +
+        '<input type="number" class="t-max" placeholder="無上限留空" data-idx="' + idx + '" value="' + row.max + '">' +
+        '<span>年化</span>' +
+        '<input type="number" class="t-rate" placeholder="%" data-idx="' + idx + '" value="' + row.rate + '">' +
+        (draft.length > 1 ? '<button class="sc-icon-btn t-remove" data-idx="' + idx + '">✕</button>' : '');
+      containerEl.appendChild(div);
+    });
+    containerEl.querySelectorAll('.t-max').forEach(inp => {
+      inp.oninput = () => { draft[inp.dataset.idx].max = inp.value; onUpdate(); };
+    });
+    containerEl.querySelectorAll('.t-rate').forEach(inp => {
+      inp.oninput = () => { draft[inp.dataset.idx].rate = inp.value; onUpdate(); };
+    });
+    containerEl.querySelectorAll('.t-remove').forEach(btn => {
+      btn.onclick = () => {
+        draft.splice(parseInt(btn.dataset.idx), 1);
+        renderTierRowsGeneric(containerEl, draft, onUpdate);
+        onUpdate();
+      };
+    });
+    onUpdate();
+  }
+
+  // ---- Add-row tier logic ----
+  function renderTierRows() {
+    renderTierRowsGeneric($('sc-tier-rows'), tierDraft, updateTierPreview);
+  }
+  function updateTierPreview() {
+    const amount = parseFloat($('sc-add-amount').value);
+    const preview = $('sc-tier-preview');
+    const validTiers = tierDraft
+      .filter(t => t.rate !== '')
+      .map(t => ({ max: t.max === '' ? null : parseFloat(t.max), rate: parseFloat(t.rate) }));
+    if (isNaN(amount) || amount <= 0 || validTiers.length === 0) {
+      preview.textContent = '';
+      return;
+    }
+    const yearly = computeTieredYearly(amount, validTiers);
+    const eff = (yearly / amount * 100).toFixed(2);
+    preview.textContent = '這筆金額的實際年化約 ' + eff + '%,預估年利息 ' + fmtUSD(yearly);
+  }
+  function setAddMode(mode) {
+    addMode = mode;
+    $('sc-mode-flat').classList.toggle('active', mode === 'flat');
+    $('sc-mode-tiered').classList.toggle('active', mode === 'tiered');
+    $('sc-add-apy').style.display = mode === 'flat' ? '' : 'none';
+    $('sc-tier-edit-btn').style.display = mode === 'tiered' ? '' : 'none';
+    $('sc-tier-panel').style.display = 'none';
+  }
+
+  // ---- Edit modal tier logic ----
+  function renderEditTierRows() {
+    renderTierRowsGeneric($('sc-edit-tier-rows'), editTierDraft, updateEditTierPreview);
+  }
+  function updateEditTierPreview() {
+    const amount = parseFloat($('sc-edit-amount').value);
+    const preview = $('sc-edit-tier-preview');
+    const validTiers = editTierDraft
+      .filter(t => t.rate !== '')
+      .map(t => ({ max: t.max === '' ? null : parseFloat(t.max), rate: parseFloat(t.rate) }));
+    if (isNaN(amount) || amount <= 0 || validTiers.length === 0) {
+      preview.textContent = '';
+      return;
+    }
+    const yearly = computeTieredYearly(amount, validTiers);
+    const eff = (yearly / amount * 100).toFixed(2);
+    preview.textContent = '這筆金額的實際年化約 ' + eff + '%,預估年利息 ' + fmtUSD(yearly);
+  }
+  function setEditMode(mode) {
+    editMode = mode;
+    $('sc-edit-mode-flat').classList.toggle('active', mode === 'flat');
+    $('sc-edit-mode-tiered').classList.toggle('active', mode === 'tiered');
+    $('sc-edit-apy-field').style.display = mode === 'flat' ? '' : 'none';
+    $('sc-edit-tier-panel').style.display = mode === 'tiered' ? 'block' : 'none';
+  }
+
+  function openEditModal(id) {
+    const h = holdings.find(x => x.id === id);
+    if (!h) return;
+    editHoldingId = id;
+    const exSel = $('sc-edit-exchange-select');
+    const coinSel = $('sc-edit-coin-select');
+    exSel.innerHTML = exchanges.map(e => '<option value="' + e + '">' + e + '</option>').join('');
+    coinSel.innerHTML = coins.map(c => '<option value="' + c + '">' + c + '</option>').join('');
+    exSel.value = h.exchange;
+    coinSel.value = h.coin;
+    $('sc-edit-amount').value = h.amount;
+
+    if (h.mode === 'tiered' && Array.isArray(h.tiers) && h.tiers.length) {
+      editTierDraft = h.tiers.map(t => ({ max: (t.max === null || t.max === undefined) ? '' : String(t.max), rate: String(t.rate) }));
+      setEditMode('tiered');
+      $('sc-edit-apy').value = '';
+    } else {
+      editTierDraft = [{ max: '', rate: '' }];
+      setEditMode('flat');
+      $('sc-edit-apy').value = h.apy != null ? h.apy : '';
+    }
+    renderEditTierRows();
+    const overlay = $('sc-edit-overlay');
+    overlay.classList.add('open');
+    overlay.style.display = 'flex';
+  }
+
+  function closeEditModal() {
+    const overlay = $('sc-edit-overlay');
+    overlay.classList.remove('open');
+    overlay.style.display = 'none';
+    editHoldingId = null;
+  }
+
+  function openTierInfoModal(id) {
+    const h = holdings.find(x => x.id === id);
+    if (!h || !Array.isArray(h.tiers)) return;
+    $('sc-tier-info-sub').textContent = h.exchange + ' · ' + h.coin + ' · 金額 ' + h.amount.toLocaleString('en-US', {maximumFractionDigits: 2});
+    const sorted = h.tiers.slice().sort((a,b) => {
+      const am = (a.max===null||a.max===undefined)?Infinity:a.max;
+      const bm = (b.max===null||b.max===undefined)?Infinity:b.max;
+      return am-bm;
+    });
+    const rowsEl = $('sc-tier-info-rows');
+    rowsEl.innerHTML = sorted.map((t, i) => {
+      const from = i === 0 ? 0 : (sorted[i-1].max === null || sorted[i-1].max === undefined ? '?' : sorted[i-1].max.toLocaleString('en-US'));
+      const to = (t.max === null || t.max === undefined) ? '以上' : t.max.toLocaleString('en-US');
+      return '<div class="sc-tier-info-row"><span class="range">' + from + ' ~ ' + to + '</span><span class="rate">' + t.rate + '%</span></div>';
+    }).join('');
+    const overlay = $('sc-tier-info-overlay');
+    overlay.classList.add('open');
+    overlay.style.display = 'flex';
+  }
+
+  function closeTierInfoModal() {
+    const overlay = $('sc-tier-info-overlay');
+    overlay.classList.remove('open');
+    overlay.style.display = 'none';
+  }
+
+  function render() {
+    renderChips('sc-exchange-chips', exchanges, async (name) => {
+      exchanges = exchanges.filter(e => e !== name);
+      holdings = holdings.filter(h => h.exchange !== name);
+      await saveExchanges(); await saveHoldings();
+      render();
+    }, exchangeColor);
+    renderChips('sc-coin-chips', coins, async (name) => {
+      coins = coins.filter(c => c !== name);
+      holdings = holdings.filter(h => h.coin !== name);
+      await saveCoins(); await saveHoldings();
+      render();
+    }, coinColor);
+    renderSelects();
+    renderTable();
+  }
+
+  function bindEvents() {
+    $('sc-refresh-btn').onclick = fetchRate;
+
+    $('sc-export-btn').onclick = exportData;
+    $('sc-import-btn').onclick = () => $('sc-import-file').click();
+    $('sc-import-file').addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        importData(e.target.files[0]);
+        e.target.value = '';
+      }
+    });
+
+    $('sc-manage-toggle').onclick = () => {
+      $('sc-manage-panel').classList.toggle('open');
+    };
+
+    $('sc-add-exchange').onclick = async () => {
+      const input = $('sc-new-exchange');
+      const name = input.value.trim();
+      if (!name) return;
+      if (!exchanges.includes(name)) exchanges.push(name);
+      input.value = '';
+      await saveExchanges();
+      render();
+    };
+    $('sc-new-exchange').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') $('sc-add-exchange').click();
+    });
+
+    $('sc-add-coin').onclick = async () => {
+      const input = $('sc-new-coin');
+      const name = input.value.trim().toUpperCase();
+      if (!name) return;
+      if (!coins.includes(name)) coins.push(name);
+      input.value = '';
+      await saveCoins();
+      render();
+    };
+    $('sc-new-coin').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') $('sc-add-coin').click();
+    });
+
+    $('sc-mode-flat').onclick = () => setAddMode('flat');
+    $('sc-mode-tiered').onclick = () => setAddMode('tiered');
+
+    $('sc-tier-edit-btn').onclick = () => {
+      const panel = $('sc-tier-panel');
+      const isOpen = panel.style.display === 'block';
+      panel.style.display = isOpen ? 'none' : 'block';
+      if (!isOpen) renderTierRows();
+    };
+    $('sc-tier-add-row').onclick = () => {
+      tierDraft.push({ max: '', rate: '' });
+      renderTierRows();
+    };
+    $('sc-add-amount').addEventListener('input', updateTierPreview);
+
+    $('sc-add-holding-btn').onclick = async () => {
+      const exchange = $('sc-add-exchange-select').value;
+      const coin = $('sc-add-coin-select').value;
+      const amount = parseFloat($('sc-add-amount').value);
+      if (!exchange || !coin || isNaN(amount) || amount <= 0) {
+        alert('請確認交易所、幣別、金額都有正確填寫');
+        return;
+      }
+      let newHolding;
+      if (addMode === 'tiered') {
+        const validTiers = tierDraft
+          .filter(t => t.rate !== '')
+          .map(t => ({ max: t.max === '' ? null : parseFloat(t.max), rate: parseFloat(t.rate) }));
+        if (validTiers.length === 0) {
+          alert('請至少設定一段階梯利率');
+          return;
+        }
+        newHolding = { id: uid(), exchange, coin, amount, mode: 'tiered', tiers: validTiers };
+      } else {
+        const apy = parseFloat($('sc-add-apy').value);
+        if (isNaN(apy) || apy < 0) {
+          alert('請確認年化利率有正確填寫');
+          return;
+        }
+        newHolding = { id: uid(), exchange, coin, amount, mode: 'flat', apy };
+      }
+      holdings.push(newHolding);
+      $('sc-add-amount').value = '';
+      $('sc-add-apy').value = '';
+      tierDraft = [{ max: '', rate: '' }];
+      $('sc-tier-panel').style.display = 'none';
+      await saveHoldings();
+      render();
+    };
+
+    // Edit modal events
+    $('sc-edit-mode-flat').onclick = () => setEditMode('flat');
+    $('sc-edit-mode-tiered').onclick = () => setEditMode('tiered');
+    $('sc-edit-tier-add-row').onclick = () => {
+      editTierDraft.push({ max: '', rate: '' });
+      renderEditTierRows();
+    };
+    $('sc-edit-amount').addEventListener('input', updateEditTierPreview);
+    $('sc-edit-cancel-btn').onclick = closeEditModal;
+    $('sc-edit-overlay').addEventListener('click', (e) => {
+      if (e.target === $('sc-edit-overlay')) closeEditModal();
+    });
+
+    $('sc-tier-info-close-btn').onclick = closeTierInfoModal;
+    $('sc-tier-info-overlay').addEventListener('click', (e) => {
+      if (e.target === $('sc-tier-info-overlay')) closeTierInfoModal();
+    });
+
+    $('sc-edit-save-btn').onclick = async () => {
+      if (!editHoldingId) return;
+      const idx = holdings.findIndex(h => h.id === editHoldingId);
+      if (idx === -1) return;
+      const exchange = $('sc-edit-exchange-select').value;
+      const coin = $('sc-edit-coin-select').value;
+      const amount = parseFloat($('sc-edit-amount').value);
+      if (!exchange || !coin || isNaN(amount) || amount <= 0) {
+        alert('請確認交易所、幣別、金額都有正確填寫');
+        return;
+      }
+      let updated;
+      if (editMode === 'tiered') {
+        const validTiers = editTierDraft
+          .filter(t => t.rate !== '')
+          .map(t => ({ max: t.max === '' ? null : parseFloat(t.max), rate: parseFloat(t.rate) }));
+        if (validTiers.length === 0) {
+          alert('請至少設定一段階梯利率');
+          return;
+        }
+        updated = { id: editHoldingId, exchange, coin, amount, mode: 'tiered', tiers: validTiers };
+      } else {
+        const apy = parseFloat($('sc-edit-apy').value);
+        if (isNaN(apy) || apy < 0) {
+          alert('請確認年化利率有正確填寫');
+          return;
+        }
+        updated = { id: editHoldingId, exchange, coin, amount, mode: 'flat', apy };
+      }
+      holdings[idx] = updated;
+      await saveHoldings();
+      closeEditModal();
+      render();
+    };
+  }
+
+  async function init() {
+    await loadAll();
+    bindEvents();
+    render();
+    fetchRate();
+  }
+
+  init();
+})();
+</script>
