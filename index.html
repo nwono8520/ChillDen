@@ -70,7 +70,7 @@
   .dot.err{background:var(--coral);box-shadow:0 0 8px rgba(226,104,94,.7);}
   
   /* 按鈕樣式設定 */
-  .btn-group{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .btn-group{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-left:auto;justify-content:flex-end;}
   .refresh{
     font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.05em;
     background:var(--surface-alt);color:var(--text);border:1px solid var(--line);
@@ -96,6 +96,23 @@
     box-shadow: 0 4px 18px rgba(212,175,106,0.35);
   }
   button.ai-btn:active{transform:translateY(1px);}
+
+  /* 手機版:狀態列獨自一排,按鈕改成整齊的 2 欄網格,不再東一塊西一塊 */
+  @media (max-width:700px){
+    .topbar{flex-direction:column;align-items:stretch;gap:12px;}
+    .status{order:-1;font-size:12px;}
+    .btn-group{
+      margin-left:0;justify-content:stretch;
+      display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;
+    }
+    .btn-group .status{grid-column:1 / -1;}
+    .btn-group button.refresh,
+    .btn-group a.refresh,
+    .btn-group button.ai-btn{
+      width:100%;justify-content:center;padding:11px 10px;font-size:12.5px;
+    }
+    .btn-group a.refresh.nav-link{grid-column:1 / -1;}
+  }
 
   .spin{animation:spin 0.9s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg);}}
