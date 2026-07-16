@@ -1341,8 +1341,7 @@ function render(data){
   document.getElementById('stForeign').innerHTML = fmtMoney(aForeign);
   
   // 美金等式排版：USD 原始金額 = 反推台幣
-  const usdCleanStr = fmtUsd(aUsdInUsd).replace(/<[^>]*>/g,'');
-  document.getElementById('stUsdMain').innerHTML = `<span style="color:var(--teal);font-size:21px;">${usdCleanStr}</span> <span style="font-size:17px;color:var(--text-muted);font-weight:400;font-family:'Inter',sans-serif;">=</span> <span style="font-family:'Source Serif 4',serif;font-size:24px;">${fmtMoney(aUsd)}</span>`;
+  document.getElementById('stUsdMain').innerHTML = usdEqHtml(aUsdInUsd, aUsd);
 
   document.getElementById('cashBankA').innerHTML = fmtMoney(parseNum(safe(data,3,12)));
   document.getElementById('cashBankB').innerHTML = fmtMoney(parseNum(safe(data,5,12)));
