@@ -367,6 +367,24 @@
   .chip{background:var(--surface-alt);border:1px solid var(--line);border-radius:10px;padding:12px 14px;min-width:0;}
   .chip .k{font-size:10px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;}
   .chip .v{font-family:'IBM Plex Mono',monospace;font-size:14px;margin-top:4px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .chip .v.usdeq-wrap{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.5;}
+
+  .chip-row-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;}
+  @media (max-width:480px){ .chip-row-2{grid-template-columns:1fr;} }
+
+  .usdeq-usd{color:var(--teal);font-size:20px;font-family:'IBM Plex Mono',monospace;}
+  .usdeq-eq{font-size:15px;color:var(--text-muted);font-weight:400;font-family:'Inter',sans-serif;margin:0 2px;}
+  .usdeq-twd{font-family:'Source Serif 4',serif;font-size:22px;}
+  @media (max-width:700px){
+    .usdeq-usd{font-size:17px;}
+    .usdeq-eq{font-size:13px;}
+    .usdeq-twd{font-size:19px;}
+  }
+  @media (max-width:420px){
+    .usdeq-usd{font-size:15px;}
+    .usdeq-eq{font-size:12px;}
+    .usdeq-twd{font-size:16px;}
+  }
 
   .errbox{background:rgba(226,104,94,.08);border:1px solid rgba(226,104,94,.35);border-radius:12px;padding:20px;color:#F3BEB9;font-size:13px;line-height:1.7;margin-bottom:20px;display:none;}
   .footer-note{text-align:center;color:var(--text-faint);font-size:11px;font-family:'IBM Plex Mono',monospace;margin-top:50px;letter-spacing:.03em;}
@@ -613,11 +631,11 @@
     <div class="section-title">幣圈資產 <span class="tag" id="cryptoUpdated"></span></div>
     <div class="cols2">
       <div class="card">
-        <div class="chip"><div class="k">幣圈總資產</div><div class="v" id="cryptoTotal">—</div></div>
-        <div class="chip" style="margin-top:12px;"><div class="k">BTC 持有量</div><div class="v" id="btcAmt">—</div></div>
-        <div class="chip-row" style="grid-template-columns:1fr 1fr; margin-top:12px;">
-          <div class="chip"><div class="k">穩定幣資產 <span style="font-weight:400;color:var(--text-faint);">· 讀自穩定幣頁面</span></div><div class="v" id="stablecoinTotal">—</div></div>
-          <div class="chip"><div class="k">其他幣別</div><div class="v" id="otherCryptoTotal">—</div></div>
+        <div class="chip"><div class="k">幣圈總資產</div><div class="v usdeq-wrap" id="cryptoTotal">—</div></div>
+        <div class="chip" style="margin-top:12px;"><div class="k">BTC 持有量</div><div class="v usdeq-wrap" id="btcAmt">—</div></div>
+        <div class="chip-row-2">
+          <div class="chip"><div class="k">穩定幣資產 <span style="font-weight:400;color:var(--text-faint);">· 讀自穩定幣頁面</span></div><div class="v usdeq-wrap" id="stablecoinTotal">—</div></div>
+          <div class="chip"><div class="k">其他幣別</div><div class="v usdeq-wrap" id="otherCryptoTotal">—</div></div>
         </div>
       </div>
       <div class="card">
@@ -676,10 +694,10 @@ function getStablecoinTotalUsd(){
   } catch(e){ return 0; }
 }
 
-// 統一的「$美金 = NT$台幣」單行顯示格式,跟美股帳面那格同一套樣式
+// 統一的「$美金 = NT$台幣」單行顯示格式,跟美股帳面那格同一套樣式;字級用 CSS class 控制,手機版才吃得到縮放規則
 function usdEqHtml(usdVal, twdVal){
   const usdStr = fmtUsd(usdVal).replace(/<[^>]*>/g,'');
-  return `<span style="color:var(--teal);font-size:21px;">${usdStr}</span> <span style="font-size:17px;color:var(--text-muted);font-weight:400;font-family:'Inter',sans-serif;">=</span> <span style="font-family:'Source Serif 4',serif;font-size:24px;">${fmtMoney(twdVal)}</span>`;
+  return `<span class="usdeq-usd">${usdStr}</span><span class="usdeq-eq">=</span><span class="usdeq-twd">${fmtMoney(twdVal)}</span>`;
 }
 
 // BTC 即時價格:抓一次快取起來,渲染 BTC 持有量那格時用來換算美金/台幣價值
