@@ -313,9 +313,10 @@
     color:var(--gold);background:rgba(212,175,106,.10);border:1px solid rgba(212,175,106,.35);
     padding:4px 12px;border-radius:20px;letter-spacing:.02em;
   }
-  .cols2{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;}
+  .cols2{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;align-items:stretch;}
   @media (max-width:900px){ .cols2{grid-template-columns:1fr;} }
-  .cols2 > .card:first-child{display:flex;flex-direction:column;justify-content:center;align-items:stretch;}
+  .cols2 > .card:first-child{display:flex;flex-direction:column;justify-content:center;align-items:stretch;height:100%;}
+  @media (max-width:900px){ .cols2 > .card:first-child{ height:auto; justify-content:flex-start; } }
 
   /* 關鍵修正：解決手機版表格擠在一起的跑版問題 */
   .table-responsive-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; max-width: 100%; }
