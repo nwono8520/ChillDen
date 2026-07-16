@@ -136,6 +136,11 @@
   .sc-rate-cell .sc-tiered-note { font-size: 10px; color: var(--mint); cursor: pointer; text-decoration: underline; background: none; border: none; padding: 0; font-family: var(--font-body); }
   .sc-rate-cell .sc-tiered-note:hover { color: var(--text); }
 
+  .sc-th-sortable { cursor: pointer; user-select: none; }
+  .sc-th-sortable:hover { color: var(--text); }
+  .sc-sort-arrow { font-size: 10px; color: var(--muted); margin-left: 3px; opacity: 0.55; display: inline-block; }
+  .sc-sort-arrow.active { color: var(--mint); opacity: 1; }
+
   .sc-tier-info-modal {
     background: #171F22; border: 1px solid #2A363A; border-radius: 14px;
     padding: 18px 20px; max-width: 360px; width: 100%; max-height: 80vh; overflow-y: auto;
@@ -332,8 +337,14 @@
     <table class="sc-table">
       <thead>
         <tr>
-          <th>交易所</th><th>幣別</th><th style="text-align:right">金額</th><th style="text-align:right">年化利率</th>
-          <th style="text-align:right">日利息</th><th style="text-align:right">月利息</th><th style="text-align:right">年利息</th><th></th>
+          <th data-sort="exchange" class="sc-th-sortable">交易所 <span class="sc-sort-arrow" data-arrow-for="exchange">↕</span></th>
+          <th data-sort="coin" class="sc-th-sortable">幣別 <span class="sc-sort-arrow" data-arrow-for="coin">↕</span></th>
+          <th data-sort="amount" class="sc-th-sortable" style="text-align:right">金額 <span class="sc-sort-arrow" data-arrow-for="amount">↕</span></th>
+          <th data-sort="rate" class="sc-th-sortable" style="text-align:right">年化利率 <span class="sc-sort-arrow" data-arrow-for="rate">↕</span></th>
+          <th data-sort="daily" class="sc-th-sortable" style="text-align:right">日利息 <span class="sc-sort-arrow" data-arrow-for="daily">↕</span></th>
+          <th data-sort="monthly" class="sc-th-sortable" style="text-align:right">月利息 <span class="sc-sort-arrow" data-arrow-for="monthly">↕</span></th>
+          <th data-sort="yearly" class="sc-th-sortable" style="text-align:right">年利息 <span class="sc-sort-arrow" data-arrow-for="yearly">↕</span></th>
+          <th></th>
         </tr>
       </thead>
       <tbody id="sc-table-body"></tbody>
@@ -433,6 +444,9 @@
   let editHoldingId = null;
   let editMode = 'flat';
   let editTierDraft = [{ max: '', rate: '' }];
+
+  let sortKey = null;
+  let sortDir = 'asc';
 
   // Two independent palettes so exchange colors never influence coin colors.
   const EXCHANGE_PALETTE = [
@@ -671,6 +685,49 @@
     }
   }
 
+  function getSortedHoldings() {
+    if (!sortKey) return holdings;
+    const withComputed = holdings.map((h) => {
+      const { daily, monthly, yearly } = computeInterest(h);
+      const rate = h.amount > 0 ? (yearly / h.amount * 100) : 0;
+      return { h, daily, monthly, yearly, rate };
+    });
+    withComputed.sort((a, b) => {
+      let av, bv;
+      switch (sortKey) {
+        case 'exchange': av = a.h.exchange; bv = b.h.exchange; break;
+        case 'coin': av = a.h.coin; bv = b.h.coin; break;
+        case 'amount': av = a.h.amount; bv = b.h.amount; break;
+        case 'rate': av = a.rate; bv = b.rate; break;
+        case 'daily': av = a.daily; bv = b.daily; break;
+        case 'monthly': av = a.monthly; bv = b.monthly; break;
+        case 'yearly': av = a.yearly; bv = b.yearly; break;
+        default: av = 0; bv = 0;
+      }
+      let cmp;
+      if (typeof av === 'string') {
+        cmp = av.localeCompare(bv, 'zh-Hant');
+      } else {
+        cmp = av - bv;
+      }
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+    return withComputed.map((x) => x.h);
+  }
+
+  function updateSortArrows() {
+    document.querySelectorAll('.sc-sort-arrow').forEach((el) => {
+      const key = el.dataset.arrowFor;
+      if (key === sortKey) {
+        el.textContent = sortDir === 'asc' ? '▲' : '▼';
+        el.classList.add('active');
+      } else {
+        el.textContent = '↕';
+        el.classList.remove('active');
+      }
+    });
+  }
+
   function renderTable() {
     const body = $('sc-table-body');
     body.innerHTML = '';
@@ -678,7 +735,7 @@
       body.innerHTML = '<tr><td colspan="8" class="sc-empty">還沒有任何部位,從下面新增第一筆吧</td></tr>';
     }
     let sumDaily = 0, sumWeekly = 0, sumMonthly = 0, sumYearly = 0, totalInvested = 0;
-    holdings.forEach((h) => {
+    getSortedHoldings().forEach((h) => {
       const { daily, weekly, monthly, yearly } = computeInterest(h);
       sumDaily += daily; sumWeekly += weekly; sumMonthly += monthly; sumYearly += yearly;
       totalInvested += h.amount;
@@ -898,6 +955,20 @@
 
   function bindEvents() {
     $('sc-refresh-btn').onclick = fetchRate;
+
+    document.querySelectorAll('.sc-th-sortable').forEach((th) => {
+      th.onclick = () => {
+        const key = th.dataset.sort;
+        if (sortKey === key) {
+          sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+          sortKey = key;
+          sortDir = 'asc';
+        }
+        updateSortArrows();
+        renderTable();
+      };
+    });
 
     $('sc-export-btn').onclick = exportData;
     $('sc-import-btn').onclick = () => $('sc-import-file').click();
