@@ -624,7 +624,7 @@
           <div class="chip"><div class="k">投報率</div><div class="v" id="usRoi">—</div></div>
         </div>
       </div>
-      <details class="stat-details" style="align-self:start;">
+      <details class="stat-details" style="align-self:start;" data-no-stretch>
         <summary class="stat-summary simple-summary">
           <span>美股入金紀錄 <span style="font-size:10px;color:var(--gold);margin-left:2px;">[點擊展開]</span></span>
           <span class="simple-arrow">▾</span>
@@ -1507,7 +1507,31 @@ function render(data){
     twStocks.map((s,i) => ({ label:s.name, value:s.amount, color:STOCK_PALETTE[i % STOCK_PALETTE.length] })),
     { svg:'stockRingSvg', legend:'stockLegendBox', title:'stockHoverTitle', sub:'stockHoverSub', amount:'stockHoverAmount', defTitle:'台股', defSub:'配置' }
   );
+
+  forceCenterBoxes();
 }
+
+// 保險機制:不管 CSS 疊層規則有沒有被其他樣式蓋掉,直接用 JS 強制套用置中樣式,
+// 並且比對每個 .cols2 兩側實際渲染高度,取較高的一邊當作基準高度寫死上去,確保視覺上真的置中。
+function forceCenterBoxes(){
+  document.querySelectorAll('.stat, .card-center-v').forEach(el => {
+    el.style.setProperty('display', 'flex', 'important');
+    el.style.setProperty('flex-direction', 'column', 'important');
+    el.style.setProperty('justify-content', 'center', 'important');
+  });
+  document.querySelectorAll('.cols2').forEach(row => {
+    const kids = Array.from(row.children);
+    if (kids.length < 2) return;
+    kids.forEach(k => { k.style.height = 'auto'; });
+    const maxH = Math.max(...kids.map(k => k.getBoundingClientRect().height));
+    kids.forEach(k => {
+      if (!k.hasAttribute('data-no-stretch')) {
+        k.style.setProperty('height', maxH + 'px', 'important');
+      }
+    });
+  });
+}
+window.addEventListener('resize', () => { try { forceCenterBoxes(); } catch(e){} });
 
 function drawRing(items, ids){
   const total = items.reduce((s,i) => s+i.value, 0) || 1;
