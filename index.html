@@ -315,6 +315,7 @@
   }
   .cols2{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;}
   @media (max-width:900px){ .cols2{grid-template-columns:1fr;} }
+  .cols2 > .card:first-child{display:flex;flex-direction:column;justify-content:center;align-items:stretch;}
 
   /* 關鍵修正：解決手機版表格擠在一起的跑版問題 */
   .table-responsive-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; max-width: 100%; }
@@ -621,7 +622,7 @@
           <div class="chip"><div class="k">投報率</div><div class="v" id="usRoi">—</div></div>
         </div>
       </div>
-      <details class="stat-details" style="align-self:center;">
+      <details class="stat-details" style="align-self:start;">
         <summary class="stat-summary simple-summary">
           <span>美股入金紀錄 <span style="font-size:10px;color:var(--gold);margin-left:2px;">[點擊展開]</span></span>
           <span class="simple-arrow">▾</span>
