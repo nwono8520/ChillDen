@@ -415,13 +415,6 @@
         <svg id="refreshIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
         重新整理
       </button>
-      <button class="refresh" onclick="exportDashboardData()" title="匯出目標金額與歷史紀錄,可帶到其他裝置使用">
-        ⬇️ 匯出資料
-      </button>
-      <button class="refresh" onclick="document.getElementById('dashImportFile').click()" title="匯入之前匯出的資料">
-        ⬆️ 匯入資料
-      </button>
-      <input type="file" id="dashImportFile" accept="application/json" style="display:none" onchange="if(this.files[0]) importDashboardData(this.files[0]); this.value='';">
       <a class="refresh nav-link" href="stablecoin_tracker.html" title="前往穩定幣利息追蹤頁面">
         🪙 穩定幣利息追蹤 →
       </a>
@@ -479,7 +472,18 @@
       </div>
     </div>
 
-    <div class="section-title">資產歷史 <span class="tag">淨資產走勢 · 每次成功讀取自動記錄當天數值</span></div>
+    <div class="section-title" style="flex-wrap:wrap;">
+      資產歷史 <span class="tag">淨資產走勢 · 每次成功讀取自動記錄當天數值</span>
+      <div style="margin-left:auto; display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="refresh" onclick="exportDashboardData()" title="匯出目標金額與歷史紀錄,可帶到其他裝置使用" style="padding:6px 12px; font-size:11px;">
+          ⬇️ 匯出資料
+        </button>
+        <button class="refresh" onclick="document.getElementById('dashImportFile').click()" title="匯入之前匯出的資料" style="padding:6px 12px; font-size:11px;">
+          ⬆️ 匯入資料
+        </button>
+        <input type="file" id="dashImportFile" accept="application/json" style="display:none" onchange="if(this.files[0]) importDashboardData(this.files[0]); this.value='';">
+      </div>
+    </div>
     <details class="history-details">
       <summary class="history-summary">
         <span>點擊展開走勢圖</span>
