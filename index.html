@@ -316,8 +316,8 @@
   }
   .cols2{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;align-items:stretch;}
   @media (max-width:900px){ .cols2{grid-template-columns:1fr;} }
-  .card-center-v{display:flex !important;flex-direction:column !important;justify-content:center !important;align-items:stretch !important;height:100%;box-sizing:border-box;}
-  @media (max-width:900px){ .card-center-v{ height:auto; justify-content:flex-start !important; } }
+  .card-center-v{display:flex !important;flex-direction:column !important;justify-content:center !important;align-items:stretch !important;}
+  @media (max-width:900px){ .card-center-v{ justify-content:flex-start !important; } }
 
   /* 關鍵修正：解決手機版表格擠在一起的跑版問題 */
   .table-responsive-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; max-width: 100%; }
@@ -533,15 +533,15 @@
     </div>
 
     <div class="grid3">
-      <div class="stat"><div class="k">台股帳面</div><div class="v" id="stTwStock">—</div><div class="v-sub" style="visibility:hidden;">-</div></div>
-      <div class="stat"><div class="k">美股帳面</div><div class="v usd-eq" id="stUsStock">—</div><div class="v-sub" style="visibility:hidden;">-</div></div>
-      <div class="stat"><div class="k">幣圈帳面</div><div class="v usd-eq" id="stCrypto">—</div><div class="v-sub" style="visibility:hidden;">-</div></div>
+      <div class="stat"><div class="k">台股帳面</div><div class="v" id="stTwStock">—</div><div class="v-sub" style="display:none;">-</div></div>
+      <div class="stat"><div class="k">美股帳面</div><div class="v usd-eq" id="stUsStock">—</div><div class="v-sub" style="display:none;">-</div></div>
+      <div class="stat"><div class="k">幣圈帳面</div><div class="v usd-eq" id="stCrypto">—</div><div class="v-sub" style="display:none;">-</div></div>
       
       <details class="stat-details">
         <summary class="stat-summary">
           <div class="k"><span>台幣現金 <span style="font-size:10px;color:var(--gold);margin-left:4px;">[點擊展開]</span></span><span class="simple-arrow">▾</span></div>
           <div class="v" id="stCash">—</div>
-          <div class="v-sub" style="visibility:hidden;">-</div>
+          <div class="v-sub" style="display:none;">-</div>
         </summary>
         <div class="cash-breakdown">
           <div class="cash-item"><span>第一銀行</span><span id="cashBankA">—</span></div>
@@ -553,13 +553,13 @@
       <div class="stat">
         <div class="k">美金現金</div>
         <div class="v usd-eq" id="stUsdMain">—</div>
-        <div class="v-sub" style="visibility:hidden;">-</div>
+        <div class="v-sub" style="display:none;">-</div>
       </div>
       
       <div class="stat">
         <div class="k">應收外債</div>
         <div class="v" id="stForeign">—</div>
-        <div class="v-sub" style="visibility:hidden;">-</div>
+        <div class="v-sub" style="display:none;">-</div>
       </div>
     </div>
 
@@ -1511,27 +1511,15 @@ function render(data){
   forceCenterBoxes();
 }
 
-// 保險機制:不管 CSS 疊層規則有沒有被其他樣式蓋掉,直接用 JS 強制套用置中樣式,
-// 並且比對每個 .cols2 兩側實際渲染高度,取較高的一邊當作基準高度寫死上去,確保視覺上真的置中。
+// 保險機制:不管 CSS 疊層規則有沒有被其他樣式蓋掉,直接用 JS 強制套用置中樣式。
+// 高度完全交給瀏覽器原生的 CSS Grid stretch 機制處理,不手動計算高度,避免算錯導致框跑版。
 function forceCenterBoxes(){
   document.querySelectorAll('.stat, .card-center-v').forEach(el => {
     el.style.setProperty('display', 'flex', 'important');
     el.style.setProperty('flex-direction', 'column', 'important');
     el.style.setProperty('justify-content', 'center', 'important');
   });
-  document.querySelectorAll('.cols2').forEach(row => {
-    const kids = Array.from(row.children);
-    if (kids.length < 2) return;
-    kids.forEach(k => { k.style.height = 'auto'; });
-    const maxH = Math.max(...kids.map(k => k.getBoundingClientRect().height));
-    kids.forEach(k => {
-      if (!k.hasAttribute('data-no-stretch')) {
-        k.style.setProperty('height', maxH + 'px', 'important');
-      }
-    });
-  });
 }
-window.addEventListener('resize', () => { try { forceCenterBoxes(); } catch(e){} });
 
 function drawRing(items, ids){
   const total = items.reduce((s,i) => s+i.value, 0) || 1;
