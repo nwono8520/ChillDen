@@ -315,7 +315,7 @@
   </div>
 
   <div class="sc-section-title">
-    <span>我的部位</span>
+    <span>穩定幣 (Stable Coin)</span>
     <span class="sc-manage-toggle" id="sc-manage-toggle">管理交易所 / 幣別</span>
   </div>
 
@@ -384,26 +384,7 @@
     <span>BTC 持倉</span>
   </div>
 
-  <div class="sc-table-wrap">
-    <table class="sc-table sc-table-btc">
-      <thead>
-        <tr>
-          <th>交易所</th>
-          <th style="text-align:right">BTC 數量</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="sc-btc-table-body"></tbody>
-    </table>
-  </div>
-
-  <div class="sc-add-row" id="sc-btc-add-row">
-    <select id="sc-btc-add-exchange-select"></select>
-    <input type="number" id="sc-btc-add-amount" placeholder="BTC 數量" min="0" step="any">
-    <button class="sc-btn" id="sc-btc-add-holding-btn">新增部位</button>
-  </div>
-
-  <div class="sc-total-banner" style="margin-top:16px;">
+  <div class="sc-total-banner">
     <div>
       <div class="sc-total-label">BTC 總持有量</div>
       <div class="sc-total-figures">
@@ -417,8 +398,67 @@
     <div class="sc-total-meta" id="sc-btc-total-meta">尚未新增任何 BTC 部位</div>
   </div>
 
+  <div class="sc-summary">
+    <div class="sc-card">
+      <div class="sc-card-label">今日利息</div>
+      <div class="sc-card-usd mono" id="sc-btc-sum-daily">0 BTC</div>
+      <div class="sc-card-twd mono" id="sc-btc-sum-daily-usd">≈ $0</div>
+    </div>
+    <div class="sc-card">
+      <div class="sc-card-label">一週利息</div>
+      <div class="sc-card-usd mono" id="sc-btc-sum-weekly">0 BTC</div>
+      <div class="sc-card-twd mono" id="sc-btc-sum-weekly-usd">≈ $0</div>
+    </div>
+    <div class="sc-card">
+      <div class="sc-card-label">每月利息</div>
+      <div class="sc-card-usd mono" id="sc-btc-sum-monthly">0 BTC</div>
+      <div class="sc-card-twd mono" id="sc-btc-sum-monthly-usd">≈ $0</div>
+    </div>
+    <div class="sc-card">
+      <div class="sc-card-label">每年利息</div>
+      <div class="sc-card-usd mono" id="sc-btc-sum-yearly">0 BTC</div>
+      <div class="sc-card-twd mono" id="sc-btc-sum-yearly-usd">≈ $0</div>
+    </div>
+  </div>
+
+  <div class="sc-table-wrap">
+    <table class="sc-table sc-table-btc">
+      <thead>
+        <tr>
+          <th data-btc-sort="exchange" class="sc-th-sortable">交易所 <span class="sc-sort-arrow" data-btc-arrow-for="exchange">↕</span></th>
+          <th data-btc-sort="amount" class="sc-th-sortable" style="text-align:right">BTC 數量 <span class="sc-sort-arrow" data-btc-arrow-for="amount">↕</span></th>
+          <th data-btc-sort="rate" class="sc-th-sortable" style="text-align:right">年化利率 <span class="sc-sort-arrow" data-btc-arrow-for="rate">↕</span></th>
+          <th data-btc-sort="daily" class="sc-th-sortable" style="text-align:right">日利息 <span class="sc-sort-arrow" data-btc-arrow-for="daily">↕</span></th>
+          <th data-btc-sort="monthly" class="sc-th-sortable" style="text-align:right">月利息 <span class="sc-sort-arrow" data-btc-arrow-for="monthly">↕</span></th>
+          <th data-btc-sort="yearly" class="sc-th-sortable" style="text-align:right">年利息 <span class="sc-sort-arrow" data-btc-arrow-for="yearly">↕</span></th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="sc-btc-table-body"></tbody>
+    </table>
+  </div>
+
+  <div class="sc-add-row" id="sc-btc-add-row">
+    <select id="sc-btc-add-exchange-select"></select>
+    <input type="number" id="sc-btc-add-amount" placeholder="BTC 數量" min="0" step="any">
+    <div class="sc-mode-toggle">
+      <button type="button" class="sc-mode-btn active" id="sc-btc-mode-flat">單一利率</button>
+      <button type="button" class="sc-mode-btn" id="sc-btc-mode-tiered">階梯利率</button>
+    </div>
+    <input type="number" id="sc-btc-add-apy" placeholder="年化 %" min="0" step="any">
+    <button class="sc-btn secondary" id="sc-btc-tier-edit-btn" style="display:none;">設定階梯</button>
+    <button class="sc-btn" id="sc-btc-add-holding-btn">新增部位</button>
+  </div>
+
+  <div class="sc-tier-panel" id="sc-btc-tier-panel" style="display:none;">
+    <div class="sc-tier-panel-title">依 BTC 數量級距設定不同年化利率,最後一段的「上限」留空代表這個級距以上都算這個利率。</div>
+    <div id="sc-btc-tier-rows"></div>
+    <button class="sc-btn secondary" id="sc-btc-tier-add-row">+ 新增一段</button>
+    <div class="sc-tier-preview" id="sc-btc-tier-preview"></div>
+  </div>
+
   <div class="sc-footnote">
-    BTC 即時價格來自公開行情 API,匯率則沿用上方 USD/TWD 匯率,僅供概算參考,實際成交價可能有落差。這裡不計算利息,單純記錄各交易所的 BTC 持有量。
+    BTC 利息計算方式跟上面穩定幣完全一樣(單利率或階梯利率),只是單位換成 BTC:日利息 = BTC 數量 × 年化 ÷ 365,以此類推。USD/TWD 換算用即時 BTC 價格與上方 USD/TWD 匯率概算,僅供參考,實際請以交易所公告為準。
   </div>
 </div>
 
@@ -472,6 +512,23 @@
       <label>BTC 數量</label>
       <input type="number" id="sc-btc-edit-amount" min="0" step="any">
     </div>
+    <div class="sc-modal-field">
+      <label>利率模式</label>
+      <div class="sc-mode-toggle">
+        <button type="button" class="sc-mode-btn" id="sc-btc-edit-mode-flat">單一利率</button>
+        <button type="button" class="sc-mode-btn" id="sc-btc-edit-mode-tiered">階梯利率</button>
+      </div>
+    </div>
+    <div class="sc-modal-field" id="sc-btc-edit-apy-field">
+      <label>年化利率 %</label>
+      <input type="number" id="sc-btc-edit-apy" min="0" step="any">
+    </div>
+    <div class="sc-tier-panel" id="sc-btc-edit-tier-panel" style="display:none; margin-top:0;">
+      <div class="sc-tier-panel-title">最後一段的「上限」留空代表這個級距以上都算這個利率。</div>
+      <div id="sc-btc-edit-tier-rows"></div>
+      <button class="sc-btn secondary" id="sc-btc-edit-tier-add-row">+ 新增一段</button>
+      <div class="sc-tier-preview" id="sc-btc-edit-tier-preview"></div>
+    </div>
     <div class="sc-modal-actions">
       <button class="sc-btn secondary" id="sc-btc-edit-cancel-btn">取消</button>
       <button class="sc-btn" id="sc-btc-edit-save-btn">儲存變更</button>
@@ -506,6 +563,13 @@
   let btcHoldings = [];
   let btcPriceUsd = null;
   let editBtcId = null;
+
+  let btcAddMode = 'flat';
+  let btcTierDraft = [{ max: '', rate: '' }];
+  let btcEditMode = 'flat';
+  let btcEditTierDraft = [{ max: '', rate: '' }];
+  let btcSortKey = null;
+  let btcSortDir = 'asc';
 
   let addMode = 'flat';
   let tierDraft = [{ max: '', rate: '' }];
@@ -999,10 +1063,13 @@
     editHoldingId = null;
   }
 
-  function openTierInfoModal(id) {
-    const h = holdings.find(x => x.id === id);
+  function openTierInfoModal(id, sourceList) {
+    const list = sourceList || holdings;
+    const h = list.find(x => x.id === id);
     if (!h || !Array.isArray(h.tiers)) return;
-    $('sc-tier-info-sub').textContent = h.exchange + ' · ' + h.coin + ' · 金額 ' + h.amount.toLocaleString('en-US', {maximumFractionDigits: 2});
+    const label = h.coin ? (h.exchange + ' · ' + h.coin + ' · 金額 ' + h.amount.toLocaleString('en-US', {maximumFractionDigits: 2}))
+                         : (h.exchange + ' · ' + h.amount.toLocaleString('en-US', {maximumFractionDigits: 8}) + ' BTC');
+    $('sc-tier-info-sub').textContent = label;
     const sorted = h.tiers.slice().sort((a,b) => {
       const am = (a.max===null||a.max===undefined)?Infinity:a.max;
       const bm = (b.max===null||b.max===undefined)?Infinity:b.max;
@@ -1033,19 +1100,72 @@
     $('sc-btc-add-row').style.display = exchanges.length === 0 ? 'none' : 'flex';
   }
 
+  function getSortedBtcHoldings() {
+    if (!btcSortKey) return btcHoldings;
+    const withComputed = btcHoldings.map((h) => {
+      const { daily, monthly, yearly } = computeInterest(h);
+      const rate = h.amount > 0 ? (yearly / h.amount * 100) : 0;
+      return { h, daily, monthly, yearly, rate };
+    });
+    withComputed.sort((a, b) => {
+      let av, bv;
+      switch (btcSortKey) {
+        case 'exchange': av = a.h.exchange; bv = b.h.exchange; break;
+        case 'amount': av = a.h.amount; bv = b.h.amount; break;
+        case 'rate': av = a.rate; bv = b.rate; break;
+        case 'daily': av = a.daily; bv = b.daily; break;
+        case 'monthly': av = a.monthly; bv = b.monthly; break;
+        case 'yearly': av = a.yearly; bv = b.yearly; break;
+        default: av = 0; bv = 0;
+      }
+      let cmp;
+      if (typeof av === 'string') { cmp = av.localeCompare(bv, 'zh-Hant'); }
+      else { cmp = av - bv; }
+      return btcSortDir === 'asc' ? cmp : -cmp;
+    });
+    return withComputed.map((x) => x.h);
+  }
+
+  function updateBtcSortArrows() {
+    document.querySelectorAll('[data-btc-arrow-for]').forEach((el) => {
+      const key = el.dataset.btcArrowFor;
+      if (key === btcSortKey) {
+        el.textContent = btcSortDir === 'asc' ? '▲' : '▼';
+        el.classList.add('active');
+      } else {
+        el.textContent = '↕';
+        el.classList.remove('active');
+      }
+    });
+  }
+
   function renderBtcTable() {
     const body = $('sc-btc-table-body');
     body.innerHTML = '';
     if (btcHoldings.length === 0) {
-      body.innerHTML = '<tr><td colspan="3" class="sc-empty">還沒有任何 BTC 部位,從下面新增第一筆吧</td></tr>';
+      body.innerHTML = '<tr><td colspan="7" class="sc-empty">還沒有任何 BTC 部位,從下面新增第一筆吧</td></tr>';
     }
-    let totalBtc = 0;
-    btcHoldings.forEach((h) => {
+    let totalBtc = 0, sumDaily = 0, sumWeekly = 0, sumMonthly = 0, sumYearly = 0;
+    getSortedBtcHoldings().forEach((h) => {
+      const { daily, weekly, monthly, yearly } = computeInterest(h);
       totalBtc += h.amount;
+      sumDaily += daily; sumWeekly += weekly; sumMonthly += monthly; sumYearly += yearly;
+      const effectiveRate = h.amount > 0 ? (yearly / h.amount * 100) : 0;
+      let rateCell;
+      if (h.mode === 'tiered' && Array.isArray(h.tiers)) {
+        rateCell = '<div class="sc-rate-cell"><span>階梯 (~' + effectiveRate.toFixed(2) + '%)</span>' +
+          '<button type="button" class="sc-tiered-note" data-btc-tier-info-id="' + h.id + '">級距明細 ⓘ</button></div>';
+      } else {
+        rateCell = '<div class="sc-rate-cell"><span>' + h.apy + '%</span></div>';
+      }
       const tr = document.createElement('tr');
       tr.innerHTML =
         '<td>' + tagHtml(h.exchange, exchangeColor(h.exchange)) + '</td>' +
         '<td class="sc-num">' + h.amount.toLocaleString('en-US', {maximumFractionDigits: 8}) + '</td>' +
+        '<td class="sc-num">' + rateCell + '</td>' +
+        '<td class="sc-num">' + daily.toLocaleString('en-US', {maximumFractionDigits: 8}) + '</td>' +
+        '<td class="sc-num">' + monthly.toLocaleString('en-US', {maximumFractionDigits: 8}) + '</td>' +
+        '<td class="sc-num">' + yearly.toLocaleString('en-US', {maximumFractionDigits: 8}) + '</td>' +
         '<td style="text-align:center; white-space:nowrap;">' +
           '<button class="sc-icon-btn edit" data-btc-edit-id="' + h.id + '" title="編輯">✎</button>' +
           '<button class="sc-icon-btn" data-btc-id="' + h.id + '" title="刪除">✕</button>' +
@@ -1063,6 +1183,9 @@
     body.querySelectorAll('button[data-btc-edit-id]').forEach(btn => {
       btn.onclick = () => openBtcEditModal(btn.dataset.btcEditId);
     });
+    body.querySelectorAll('button[data-btc-tier-info-id]').forEach(btn => {
+      btn.onclick = () => openTierInfoModal(btn.dataset.btcTierInfoId, btcHoldings);
+    });
 
     $('sc-btc-total-amount').textContent = totalBtc.toLocaleString('en-US', {maximumFractionDigits: 8}) + ' BTC';
     if (btcPriceUsd) {
@@ -1076,6 +1199,74 @@
     $('sc-btc-total-meta').textContent = btcHoldings.length === 0
       ? '尚未新增任何 BTC 部位'
       : '共 ' + btcHoldings.length + ' 筆部位,分散在 ' + new Set(btcHoldings.map(h => h.exchange)).size + ' 個交易所';
+
+    $('sc-btc-sum-daily').textContent = sumDaily.toLocaleString('en-US', {maximumFractionDigits: 8}) + ' BTC';
+    $('sc-btc-sum-weekly').textContent = sumWeekly.toLocaleString('en-US', {maximumFractionDigits: 8}) + ' BTC';
+    $('sc-btc-sum-monthly').textContent = sumMonthly.toLocaleString('en-US', {maximumFractionDigits: 8}) + ' BTC';
+    $('sc-btc-sum-yearly').textContent = sumYearly.toLocaleString('en-US', {maximumFractionDigits: 8}) + ' BTC';
+    if (btcPriceUsd) {
+      $('sc-btc-sum-daily-usd').textContent = '≈ ' + fmtUSD(sumDaily * btcPriceUsd);
+      $('sc-btc-sum-weekly-usd').textContent = '≈ ' + fmtUSD(sumWeekly * btcPriceUsd);
+      $('sc-btc-sum-monthly-usd').textContent = '≈ ' + fmtUSD(sumMonthly * btcPriceUsd);
+      $('sc-btc-sum-yearly-usd').textContent = '≈ ' + fmtUSD(sumYearly * btcPriceUsd);
+    } else {
+      ['sc-btc-sum-daily-usd', 'sc-btc-sum-weekly-usd', 'sc-btc-sum-monthly-usd', 'sc-btc-sum-yearly-usd'].forEach(id => {
+        $(id).textContent = '≈ 價格載入中';
+      });
+    }
+  }
+
+  // ---- BTC add-row tier logic ----
+  function renderBtcTierRows() {
+    renderTierRowsGeneric($('sc-btc-tier-rows'), btcTierDraft, updateBtcTierPreview);
+  }
+  function updateBtcTierPreview() {
+    const amount = parseFloat($('sc-btc-add-amount').value);
+    const preview = $('sc-btc-tier-preview');
+    const validTiers = btcTierDraft
+      .filter(t => t.rate !== '')
+      .map(t => ({ max: t.max === '' ? null : parseFloat(t.max), rate: parseFloat(t.rate) }));
+    if (isNaN(amount) || amount <= 0 || validTiers.length === 0) {
+      preview.textContent = '';
+      return;
+    }
+    const yearly = computeTieredYearly(amount, validTiers);
+    const eff = (yearly / amount * 100).toFixed(2);
+    preview.textContent = '這筆數量的實際年化約 ' + eff + '%,預估年利息 ' + yearly.toLocaleString('en-US', {maximumFractionDigits: 8}) + ' BTC';
+  }
+  function setBtcAddMode(mode) {
+    btcAddMode = mode;
+    $('sc-btc-mode-flat').classList.toggle('active', mode === 'flat');
+    $('sc-btc-mode-tiered').classList.toggle('active', mode === 'tiered');
+    $('sc-btc-add-apy').style.display = mode === 'flat' ? '' : 'none';
+    $('sc-btc-tier-edit-btn').style.display = mode === 'tiered' ? '' : 'none';
+    $('sc-btc-tier-panel').style.display = 'none';
+  }
+
+  // ---- BTC edit modal tier logic ----
+  function renderBtcEditTierRows() {
+    renderTierRowsGeneric($('sc-btc-edit-tier-rows'), btcEditTierDraft, updateBtcEditTierPreview);
+  }
+  function updateBtcEditTierPreview() {
+    const amount = parseFloat($('sc-btc-edit-amount').value);
+    const preview = $('sc-btc-edit-tier-preview');
+    const validTiers = btcEditTierDraft
+      .filter(t => t.rate !== '')
+      .map(t => ({ max: t.max === '' ? null : parseFloat(t.max), rate: parseFloat(t.rate) }));
+    if (isNaN(amount) || amount <= 0 || validTiers.length === 0) {
+      preview.textContent = '';
+      return;
+    }
+    const yearly = computeTieredYearly(amount, validTiers);
+    const eff = (yearly / amount * 100).toFixed(2);
+    preview.textContent = '這筆數量的實際年化約 ' + eff + '%,預估年利息 ' + yearly.toLocaleString('en-US', {maximumFractionDigits: 8}) + ' BTC';
+  }
+  function setBtcEditMode(mode) {
+    btcEditMode = mode;
+    $('sc-btc-edit-mode-flat').classList.toggle('active', mode === 'flat');
+    $('sc-btc-edit-mode-tiered').classList.toggle('active', mode === 'tiered');
+    $('sc-btc-edit-apy-field').style.display = mode === 'flat' ? '' : 'none';
+    $('sc-btc-edit-tier-panel').style.display = mode === 'tiered' ? 'block' : 'none';
   }
 
   function openBtcEditModal(id) {
@@ -1086,6 +1277,17 @@
     sel.innerHTML = exchanges.map(e => '<option value="' + e + '">' + e + '</option>').join('');
     sel.value = h.exchange;
     $('sc-btc-edit-amount').value = h.amount;
+
+    if (h.mode === 'tiered' && Array.isArray(h.tiers) && h.tiers.length) {
+      btcEditTierDraft = h.tiers.map(t => ({ max: (t.max === null || t.max === undefined) ? '' : String(t.max), rate: String(t.rate) }));
+      setBtcEditMode('tiered');
+      $('sc-btc-edit-apy').value = '';
+    } else {
+      btcEditTierDraft = [{ max: '', rate: '' }];
+      setBtcEditMode('flat');
+      $('sc-btc-edit-apy').value = h.apy != null ? h.apy : '';
+    }
+    renderBtcEditTierRows();
     const overlay = $('sc-btc-edit-overlay');
     overlay.classList.add('open');
     overlay.style.display = 'flex';
@@ -1278,6 +1480,34 @@
     };
 
     // BTC 部位事件
+    $('sc-btc-mode-flat').onclick = () => setBtcAddMode('flat');
+    $('sc-btc-mode-tiered').onclick = () => setBtcAddMode('tiered');
+    $('sc-btc-tier-edit-btn').onclick = () => {
+      const panel = $('sc-btc-tier-panel');
+      const isOpen = panel.style.display === 'block';
+      panel.style.display = isOpen ? 'none' : 'block';
+      if (!isOpen) renderBtcTierRows();
+    };
+    $('sc-btc-tier-add-row').onclick = () => {
+      btcTierDraft.push({ max: '', rate: '' });
+      renderBtcTierRows();
+    };
+    $('sc-btc-add-amount').addEventListener('input', updateBtcTierPreview);
+
+    document.querySelectorAll('[data-btc-sort]').forEach((th) => {
+      th.onclick = () => {
+        const key = th.dataset.btcSort;
+        if (btcSortKey === key) {
+          btcSortDir = btcSortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+          btcSortKey = key;
+          btcSortDir = 'asc';
+        }
+        updateBtcSortArrows();
+        renderBtcTable();
+      };
+    });
+
     $('sc-btc-add-holding-btn').onclick = async () => {
       const exchange = $('sc-btc-add-exchange-select').value;
       const amount = parseFloat($('sc-btc-add-amount').value);
@@ -1285,12 +1515,40 @@
         alert('請確認交易所、BTC 數量都有正確填寫');
         return;
       }
-      btcHoldings.push({ id: uid(), exchange, amount });
+      let newHolding;
+      if (btcAddMode === 'tiered') {
+        const validTiers = btcTierDraft
+          .filter(t => t.rate !== '')
+          .map(t => ({ max: t.max === '' ? null : parseFloat(t.max), rate: parseFloat(t.rate) }));
+        if (validTiers.length === 0) {
+          alert('請至少設定一段階梯利率');
+          return;
+        }
+        newHolding = { id: uid(), exchange, amount, mode: 'tiered', tiers: validTiers };
+      } else {
+        const apy = parseFloat($('sc-btc-add-apy').value);
+        if (isNaN(apy) || apy < 0) {
+          alert('請確認年化利率有正確填寫');
+          return;
+        }
+        newHolding = { id: uid(), exchange, amount, mode: 'flat', apy };
+      }
+      btcHoldings.push(newHolding);
       $('sc-btc-add-amount').value = '';
+      $('sc-btc-add-apy').value = '';
+      btcTierDraft = [{ max: '', rate: '' }];
+      $('sc-btc-tier-panel').style.display = 'none';
       await saveBtcHoldings();
       renderBtcTable();
     };
 
+    $('sc-btc-edit-mode-flat').onclick = () => setBtcEditMode('flat');
+    $('sc-btc-edit-mode-tiered').onclick = () => setBtcEditMode('tiered');
+    $('sc-btc-edit-tier-add-row').onclick = () => {
+      btcEditTierDraft.push({ max: '', rate: '' });
+      renderBtcEditTierRows();
+    };
+    $('sc-btc-edit-amount').addEventListener('input', updateBtcEditTierPreview);
     $('sc-btc-edit-cancel-btn').onclick = closeBtcEditModal;
     $('sc-btc-edit-overlay').addEventListener('click', (e) => {
       if (e.target === $('sc-btc-edit-overlay')) closeBtcEditModal();
@@ -1305,7 +1563,25 @@
         alert('請確認交易所、BTC 數量都有正確填寫');
         return;
       }
-      btcHoldings[idx] = { id: editBtcId, exchange, amount };
+      let updated;
+      if (btcEditMode === 'tiered') {
+        const validTiers = btcEditTierDraft
+          .filter(t => t.rate !== '')
+          .map(t => ({ max: t.max === '' ? null : parseFloat(t.max), rate: parseFloat(t.rate) }));
+        if (validTiers.length === 0) {
+          alert('請至少設定一段階梯利率');
+          return;
+        }
+        updated = { id: editBtcId, exchange, amount, mode: 'tiered', tiers: validTiers };
+      } else {
+        const apy = parseFloat($('sc-btc-edit-apy').value);
+        if (isNaN(apy) || apy < 0) {
+          alert('請確認年化利率有正確填寫');
+          return;
+        }
+        updated = { id: editBtcId, exchange, amount, mode: 'flat', apy };
+      }
+      btcHoldings[idx] = updated;
       await saveBtcHoldings();
       closeBtcEditModal();
       renderBtcTable();
