@@ -298,12 +298,13 @@
   @media (max-width:900px){ .cols2{grid-template-columns:1fr;} }
 
   /* 關鍵修正：解決手機版表格擠在一起的跑版問題 */
-  .table-responsive-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+  .table-responsive-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; max-width: 100%; }
   .table-responsive-wrapper table { min-width: 480px; } /* 強制寬度，不足時出現卷軸 */
   .tw-holdings-layout{display:flex;gap:26px;align-items:flex-start;}
   .tw-ring-box{flex:0 0 auto;padding-top:6px;}
   @media (max-width:900px){
-    .tw-holdings-layout{flex-direction:column;}
+    .tw-holdings-layout{flex-direction:column;overflow-x:hidden;max-width:100%;}
+    .tw-holdings-layout .table-responsive-wrapper{width:100%;max-width:100%;flex:none;}
     .tw-ring-box{width:100%;display:flex;justify-content:center;padding-top:18px;border-top:1px dashed var(--line);margin-top:6px;}
   }
   
