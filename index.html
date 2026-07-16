@@ -618,6 +618,14 @@
           <div class="chip"><div class="k">換算台幣</div><div class="v" id="cryptoTwd">—</div></div>
         </div>
         <div class="chip" style="margin-top:12px;"><div class="k">BTC 持有量</div><div class="v" id="btcAmt">—</div></div>
+        <div class="chip-row" style="grid-template-columns:1fr 1fr; margin-top:12px;">
+          <div class="chip"><div class="k">穩定幣資產 USD <span style="font-weight:400;color:var(--text-faint);">· 讀自穩定幣頁面</span></div><div class="v" id="stablecoinUsd">—</div></div>
+          <div class="chip"><div class="k">穩定幣資產 台幣</div><div class="v" id="stablecoinTwd">—</div></div>
+        </div>
+        <div class="chip-row" style="grid-template-columns:1fr 1fr; margin-top:12px;">
+          <div class="chip"><div class="k">其他幣別 USD</div><div class="v" id="otherCryptoUsd">—</div></div>
+          <div class="chip"><div class="k">其他幣別 台幣</div><div class="v" id="otherCryptoTwd">—</div></div>
+        </div>
       </div>
       <div class="card">
         <div class="wallet-list">
@@ -662,6 +670,18 @@ const fmtPct = n => {
   const isNeg = n < 0;
   return `<span class="${isNeg ? 'val-neg' : ''}">${(n*100).toFixed(1)}%</span>`;
 };
+
+// 穩定幣利息追蹤頁面跟這個頁面是同一個網站(同源),瀏覽器的 localStorage 是共用的,
+// 所以可以直接讀到那邊存的部位資料,不用另外匯出匯入。
+function getStablecoinTotalUsd(){
+  try {
+    const raw = localStorage.getItem('sc:holdings');
+    if(!raw) return 0;
+    const list = JSON.parse(raw);
+    if(!Array.isArray(list)) return 0;
+    return list.reduce((sum, h) => sum + (parseFloat(h && h.amount) || 0), 0);
+  } catch(e){ return 0; }
+}
 
 function parseNum(v){
   if(v===undefined||v===null) return 0;
@@ -1360,6 +1380,16 @@ function render(data){
   document.getElementById('cryptoUsd').innerHTML = fmtUsd(cryptoUsd);
   document.getElementById('cryptoTwd').innerHTML = fmtMoney(cryptoTwd);
   document.getElementById('btcAmt').textContent = btc.toFixed(6) + ' BTC';
+
+  const stablecoinUsd = getStablecoinTotalUsd();
+  const stablecoinTwd = stablecoinUsd * usFx;
+  const otherCryptoUsd = cryptoUsd - stablecoinUsd;
+  const otherCryptoTwd = cryptoTwd - stablecoinTwd;
+  document.getElementById('stablecoinUsd').innerHTML = fmtUsd(stablecoinUsd);
+  document.getElementById('stablecoinTwd').innerHTML = fmtMoney(stablecoinTwd);
+  document.getElementById('otherCryptoUsd').innerHTML = fmtUsd(otherCryptoUsd);
+  document.getElementById('otherCryptoTwd').innerHTML = fmtMoney(otherCryptoTwd);
+
 
   let wr = 17;
   cryptoWallets = [];
