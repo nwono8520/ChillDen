@@ -122,6 +122,11 @@
 
   .sc-table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; -webkit-overflow-scrolling: touch; }
   table.sc-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 680px; }
+  table.sc-table.sc-table-btc { min-width: 0; }
+  @media (max-width: 700px) {
+    table.sc-table.sc-table-btc th, table.sc-table.sc-table-btc td { padding: 10px 8px; }
+    table.sc-table.sc-table-btc th:first-child, table.sc-table.sc-table-btc td:first-child { padding-left: 12px; }
+  }
   table.sc-table th {
     text-align: left; font-weight: 500; color: var(--muted); font-size: 11px;
     text-transform: uppercase; letter-spacing: 0.04em; padding: 12px 14px;
@@ -380,7 +385,7 @@
   </div>
 
   <div class="sc-table-wrap">
-    <table class="sc-table">
+    <table class="sc-table sc-table-btc">
       <thead>
         <tr>
           <th>交易所</th>
