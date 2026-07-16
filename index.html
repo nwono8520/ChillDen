@@ -396,6 +396,16 @@
         <svg id="refreshIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
         重新整理
       </button>
+      <button class="refresh" onclick="exportDashboardData()" title="匯出目標金額與歷史紀錄,可帶到其他裝置使用">
+        ⬇️ 匯出資料
+      </button>
+      <button class="refresh" onclick="document.getElementById('dashImportFile').click()" title="匯入之前匯出的資料">
+        ⬆️ 匯入資料
+      </button>
+      <input type="file" id="dashImportFile" accept="application/json" style="display:none" onchange="if(this.files[0]) importDashboardData(this.files[0]); this.value='';">
+      <a class="refresh" href="stablecoin_tracker.html" style="text-decoration:none;" title="前往穩定幣利息追蹤頁面">
+        💰 穩定幣利息追蹤 →
+      </a>
     </div>
   </div>
 
@@ -901,6 +911,51 @@ function loadHistory(){
 function saveHistory(arr){
   try{ localStorage.setItem(HISTORY_KEY, JSON.stringify(arr)); }catch(e){}
 }
+
+// ---- 匯出/匯入本機資料(目標金額、歷史走勢、主題)----
+// 注意:資產本身的數字是即時從 Google 試算表讀進來的,任何裝置打開都會抓到一樣的資料,
+// 不需要匯出;真正只存在「這台裝置」的是你手動設的目標金額,還有這裡自動累積的歷史走勢紀錄。
+function exportDashboardData(){
+  const payload = {
+    theme: localStorage.getItem('dashboardTheme') || 'dark',
+    goalTarget: localStorage.getItem('assetGoalTarget') || '',
+    history: loadHistory(),
+    exportedAt: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'asset-dashboard-data-' + new Date().toISOString().slice(0,10) + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function importDashboardData(file){
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const payload = JSON.parse(e.target.result);
+      if(!confirm('匯入將覆蓋這台裝置上的目標金額與歷史走勢紀錄,確定要繼續嗎?')) return;
+      if(payload.theme === 'light' || payload.theme === 'dark'){
+        localStorage.setItem('dashboardTheme', payload.theme);
+      }
+      if(payload.goalTarget){
+        localStorage.setItem('assetGoalTarget', payload.goalTarget);
+      }
+      if(Array.isArray(payload.history)){
+        saveHistory(payload.history);
+      }
+      alert('匯入成功,即將重新整理頁面套用');
+      location.reload();
+    } catch(err){
+      alert('檔案格式錯誤,匯入失敗');
+    }
+  };
+  reader.readAsText(file);
+}
+
 function dateStrFrom(d){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
