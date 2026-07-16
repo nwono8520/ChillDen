@@ -374,6 +374,47 @@
   <div class="sc-footnote" id="sc-footnote">
     利息估算方式:單一利率採單利,日利息 = 金額 × 年化 ÷ 365、週利息 = 金額 × 年化 ÷ 52、月利息 = 金額 × 年化 ÷ 12。階梯利率則依金額落在哪些級距分段計算後,再換算日/週/月利息。總投入是把所有部位金額直接加總,假設每種穩定幣都約等於 1 美元,實際可能有些微價差。實際交易所可能用不同天數或每日複利計算,僅供概算參考。資料只存在「這個裝置的這個瀏覽器」裡,不會自動同步到其他裝置;要換電腦或手機使用時,請先按「匯出資料」存成 json 檔,再到另一台裝置按「匯入資料」讀取,即可帶著同一份紀錄走。
   </div>
+
+  <div class="sc-section-title" style="margin-top:36px;">
+    <span>BTC 持倉</span>
+  </div>
+
+  <div class="sc-table-wrap">
+    <table class="sc-table">
+      <thead>
+        <tr>
+          <th>交易所</th>
+          <th style="text-align:right">BTC 數量</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="sc-btc-table-body"></tbody>
+    </table>
+  </div>
+
+  <div class="sc-add-row" id="sc-btc-add-row">
+    <select id="sc-btc-add-exchange-select"></select>
+    <input type="number" id="sc-btc-add-amount" placeholder="BTC 數量" min="0" step="any">
+    <button class="sc-btn" id="sc-btc-add-holding-btn">新增部位</button>
+  </div>
+
+  <div class="sc-total-banner" style="margin-top:16px;">
+    <div>
+      <div class="sc-total-label">BTC 總持有量</div>
+      <div class="sc-total-figures">
+        <span class="sc-total-usd mono" id="sc-btc-total-amount">0 BTC</span>
+      </div>
+      <div style="margin-top:8px; display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;">
+        <span class="sc-card-usd mono" id="sc-btc-total-usd" style="font-size:16px;">≈ $0</span>
+        <span class="sc-card-twd mono" id="sc-btc-total-twd" style="font-size:16px;">≈ NT$0</span>
+      </div>
+    </div>
+    <div class="sc-total-meta" id="sc-btc-total-meta">尚未新增任何 BTC 部位</div>
+  </div>
+
+  <div class="sc-footnote">
+    BTC 即時價格來自公開行情 API,匯率則沿用上方 USD/TWD 匯率,僅供概算參考,實際成交價可能有落差。這裡不計算利息,單純記錄各交易所的 BTC 持有量。
+  </div>
 </div>
 
 <div class="sc-modal-overlay" id="sc-edit-overlay">
@@ -415,6 +456,24 @@
   </div>
 </div>
 
+<div class="sc-modal-overlay" id="sc-btc-edit-overlay">
+  <div class="sc-modal" style="background:#171F22; border:1px solid #2A363A; border-radius:16px;">
+    <div class="sc-modal-title">編輯 BTC 部位</div>
+    <div class="sc-modal-field">
+      <label>交易所</label>
+      <select id="sc-btc-edit-exchange-select"></select>
+    </div>
+    <div class="sc-modal-field">
+      <label>BTC 數量</label>
+      <input type="number" id="sc-btc-edit-amount" min="0" step="any">
+    </div>
+    <div class="sc-modal-actions">
+      <button class="sc-btn secondary" id="sc-btc-edit-cancel-btn">取消</button>
+      <button class="sc-btn" id="sc-btc-edit-save-btn">儲存變更</button>
+    </div>
+  </div>
+</div>
+
 <div class="sc-modal-overlay" id="sc-tier-info-overlay">
   <div class="sc-tier-info-modal">
     <div class="sc-tier-info-title" id="sc-tier-info-title">級距明細</div>
@@ -429,6 +488,7 @@
   const STORE_KEY_HOLDINGS = 'sc:holdings';
   const STORE_KEY_EXCHANGES = 'sc:exchanges';
   const STORE_KEY_COINS = 'sc:coins';
+  const STORE_KEY_BTC = 'sc:btcHoldings';
 
   const DEFAULT_EXCHANGES = ['OKX', 'Bybit'];
   const DEFAULT_COINS = ['USDT', 'USDC', 'USDE', 'USD1'];
@@ -437,6 +497,10 @@
   let exchanges = [];
   let coins = [];
   let usdToTwd = null;
+
+  let btcHoldings = [];
+  let btcPriceUsd = null;
+  let editBtcId = null;
 
   let addMode = 'flat';
   let tierDraft = [{ max: '', rate: '' }];
@@ -513,6 +577,10 @@
       const c = localStorage.getItem(STORE_KEY_COINS);
       coins = c ? JSON.parse(c) : DEFAULT_COINS.slice();
     } catch (e) { coins = DEFAULT_COINS.slice(); }
+    try {
+      const b = localStorage.getItem(STORE_KEY_BTC);
+      btcHoldings = b ? JSON.parse(b) : [];
+    } catch (e) { btcHoldings = []; }
   }
 
   async function saveHoldings() {
@@ -527,9 +595,24 @@
     try { localStorage.setItem(STORE_KEY_COINS, JSON.stringify(coins)); }
     catch (e) { console.error('save coins failed', e); }
   }
+  async function saveBtcHoldings() {
+    try { localStorage.setItem(STORE_KEY_BTC, JSON.stringify(btcHoldings)); }
+    catch (e) { console.error('save btc holdings failed', e); }
+  }
+
+  async function fetchBtcPrice() {
+    try {
+      const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
+      const json = await res.json();
+      if (json && json.bitcoin && typeof json.bitcoin.usd === 'number') {
+        btcPriceUsd = json.bitcoin.usd;
+        renderBtcTable();
+      }
+    } catch (e) { /* 抓不到即時價格時,只顯示 BTC 數量,不影響其他功能 */ }
+  }
 
   function exportData() {
-    const payload = { holdings, exchanges, coins, exportedAt: new Date().toISOString() };
+    const payload = { holdings, exchanges, coins, btcHoldings, exportedAt: new Date().toISOString() };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -550,7 +633,8 @@
         holdings = Array.isArray(payload.holdings) ? payload.holdings : [];
         exchanges = Array.isArray(payload.exchanges) ? payload.exchanges : DEFAULT_EXCHANGES.slice();
         coins = Array.isArray(payload.coins) ? payload.coins : DEFAULT_COINS.slice();
-        await saveHoldings(); await saveExchanges(); await saveCoins();
+        btcHoldings = Array.isArray(payload.btcHoldings) ? payload.btcHoldings : [];
+        await saveHoldings(); await saveExchanges(); await saveCoins(); await saveBtcHoldings();
         render();
         alert('匯入成功');
       } catch (err) {
@@ -936,11 +1020,85 @@
     overlay.style.display = 'none';
   }
 
+  function renderBtcSelects() {
+    const sel = $('sc-btc-add-exchange-select');
+    const prev = sel.value;
+    sel.innerHTML = exchanges.map(e => '<option value="' + e + '">' + e + '</option>').join('');
+    if (exchanges.includes(prev)) sel.value = prev;
+    $('sc-btc-add-row').style.display = exchanges.length === 0 ? 'none' : 'flex';
+  }
+
+  function renderBtcTable() {
+    const body = $('sc-btc-table-body');
+    body.innerHTML = '';
+    if (btcHoldings.length === 0) {
+      body.innerHTML = '<tr><td colspan="3" class="sc-empty">還沒有任何 BTC 部位,從下面新增第一筆吧</td></tr>';
+    }
+    let totalBtc = 0;
+    btcHoldings.forEach((h) => {
+      totalBtc += h.amount;
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>' + tagHtml(h.exchange, exchangeColor(h.exchange)) + '</td>' +
+        '<td class="sc-num">' + h.amount.toLocaleString('en-US', {maximumFractionDigits: 8}) + '</td>' +
+        '<td style="text-align:center; white-space:nowrap;">' +
+          '<button class="sc-icon-btn edit" data-btc-edit-id="' + h.id + '" title="編輯">✎</button>' +
+          '<button class="sc-icon-btn" data-btc-id="' + h.id + '" title="刪除">✕</button>' +
+        '</td>';
+      body.appendChild(tr);
+    });
+    body.querySelectorAll('button[data-btc-id]').forEach(btn => {
+      btn.onclick = async () => {
+        if (!confirm('確定要刪除這筆 BTC 部位嗎?')) return;
+        btcHoldings = btcHoldings.filter(h => h.id !== btn.dataset.btcId);
+        await saveBtcHoldings();
+        renderBtcTable();
+      };
+    });
+    body.querySelectorAll('button[data-btc-edit-id]').forEach(btn => {
+      btn.onclick = () => openBtcEditModal(btn.dataset.btcEditId);
+    });
+
+    $('sc-btc-total-amount').textContent = totalBtc.toLocaleString('en-US', {maximumFractionDigits: 8}) + ' BTC';
+    if (btcPriceUsd) {
+      const usdVal = totalBtc * btcPriceUsd;
+      $('sc-btc-total-usd').textContent = '≈ ' + fmtUSD(usdVal);
+      $('sc-btc-total-twd').textContent = usdToTwd ? '≈ ' + fmtTWD(usdVal * usdToTwd) : '≈ 匯率載入中';
+    } else {
+      $('sc-btc-total-usd').textContent = '≈ BTC 價格載入中';
+      $('sc-btc-total-twd').textContent = '';
+    }
+    $('sc-btc-total-meta').textContent = btcHoldings.length === 0
+      ? '尚未新增任何 BTC 部位'
+      : '共 ' + btcHoldings.length + ' 筆部位,分散在 ' + new Set(btcHoldings.map(h => h.exchange)).size + ' 個交易所';
+  }
+
+  function openBtcEditModal(id) {
+    const h = btcHoldings.find(x => x.id === id);
+    if (!h) return;
+    editBtcId = id;
+    const sel = $('sc-btc-edit-exchange-select');
+    sel.innerHTML = exchanges.map(e => '<option value="' + e + '">' + e + '</option>').join('');
+    sel.value = h.exchange;
+    $('sc-btc-edit-amount').value = h.amount;
+    const overlay = $('sc-btc-edit-overlay');
+    overlay.classList.add('open');
+    overlay.style.display = 'flex';
+  }
+
+  function closeBtcEditModal() {
+    const overlay = $('sc-btc-edit-overlay');
+    overlay.classList.remove('open');
+    overlay.style.display = 'none';
+    editBtcId = null;
+  }
+
   function render() {
     renderChips('sc-exchange-chips', exchanges, async (name) => {
       exchanges = exchanges.filter(e => e !== name);
       holdings = holdings.filter(h => h.exchange !== name);
-      await saveExchanges(); await saveHoldings();
+      btcHoldings = btcHoldings.filter(h => h.exchange !== name);
+      await saveExchanges(); await saveHoldings(); await saveBtcHoldings();
       render();
     }, exchangeColor);
     renderChips('sc-coin-chips', coins, async (name) => {
@@ -951,6 +1109,8 @@
     }, coinColor);
     renderSelects();
     renderTable();
+    renderBtcSelects();
+    renderBtcTable();
   }
 
   function bindEvents() {
@@ -1111,6 +1271,40 @@
       closeEditModal();
       render();
     };
+
+    // BTC 部位事件
+    $('sc-btc-add-holding-btn').onclick = async () => {
+      const exchange = $('sc-btc-add-exchange-select').value;
+      const amount = parseFloat($('sc-btc-add-amount').value);
+      if (!exchange || isNaN(amount) || amount <= 0) {
+        alert('請確認交易所、BTC 數量都有正確填寫');
+        return;
+      }
+      btcHoldings.push({ id: uid(), exchange, amount });
+      $('sc-btc-add-amount').value = '';
+      await saveBtcHoldings();
+      renderBtcTable();
+    };
+
+    $('sc-btc-edit-cancel-btn').onclick = closeBtcEditModal;
+    $('sc-btc-edit-overlay').addEventListener('click', (e) => {
+      if (e.target === $('sc-btc-edit-overlay')) closeBtcEditModal();
+    });
+    $('sc-btc-edit-save-btn').onclick = async () => {
+      if (!editBtcId) return;
+      const idx = btcHoldings.findIndex(h => h.id === editBtcId);
+      if (idx === -1) return;
+      const exchange = $('sc-btc-edit-exchange-select').value;
+      const amount = parseFloat($('sc-btc-edit-amount').value);
+      if (!exchange || isNaN(amount) || amount <= 0) {
+        alert('請確認交易所、BTC 數量都有正確填寫');
+        return;
+      }
+      btcHoldings[idx] = { id: editBtcId, exchange, amount };
+      await saveBtcHoldings();
+      closeBtcEditModal();
+      renderBtcTable();
+    };
   }
 
   async function init() {
@@ -1118,6 +1312,7 @@
     bindEvents();
     render();
     fetchRate();
+    fetchBtcPrice();
   }
 
   init();
