@@ -613,18 +613,11 @@
     <div class="section-title">幣圈資產 <span class="tag" id="cryptoUpdated"></span></div>
     <div class="cols2">
       <div class="card">
-        <div class="chip-row" style="grid-template-columns:1fr 1fr;">
-          <div class="chip"><div class="k">總價值 USD</div><div class="v" id="cryptoUsd">—</div></div>
-          <div class="chip"><div class="k">換算台幣</div><div class="v" id="cryptoTwd">—</div></div>
-        </div>
+        <div class="chip"><div class="k">幣圈總資產</div><div class="v" id="cryptoTotal">—</div></div>
         <div class="chip" style="margin-top:12px;"><div class="k">BTC 持有量</div><div class="v" id="btcAmt">—</div></div>
         <div class="chip-row" style="grid-template-columns:1fr 1fr; margin-top:12px;">
-          <div class="chip"><div class="k">穩定幣資產 USD <span style="font-weight:400;color:var(--text-faint);">· 讀自穩定幣頁面</span></div><div class="v" id="stablecoinUsd">—</div></div>
-          <div class="chip"><div class="k">穩定幣資產 台幣</div><div class="v" id="stablecoinTwd">—</div></div>
-        </div>
-        <div class="chip-row" style="grid-template-columns:1fr 1fr; margin-top:12px;">
-          <div class="chip"><div class="k">其他幣別 USD</div><div class="v" id="otherCryptoUsd">—</div></div>
-          <div class="chip"><div class="k">其他幣別 台幣</div><div class="v" id="otherCryptoTwd">—</div></div>
+          <div class="chip"><div class="k">穩定幣資產 <span style="font-weight:400;color:var(--text-faint);">· 讀自穩定幣頁面</span></div><div class="v" id="stablecoinTotal">—</div></div>
+          <div class="chip"><div class="k">其他幣別</div><div class="v" id="otherCryptoTotal">—</div></div>
         </div>
       </div>
       <div class="card">
@@ -681,6 +674,41 @@ function getStablecoinTotalUsd(){
     if(!Array.isArray(list)) return 0;
     return list.reduce((sum, h) => sum + (parseFloat(h && h.amount) || 0), 0);
   } catch(e){ return 0; }
+}
+
+// 統一的「$美金 = NT$台幣」單行顯示格式,跟美股帳面那格同一套樣式
+function usdEqHtml(usdVal, twdVal){
+  const usdStr = fmtUsd(usdVal).replace(/<[^>]*>/g,'');
+  return `<span style="color:var(--teal);font-size:21px;">${usdStr}</span> <span style="font-size:17px;color:var(--text-muted);font-weight:400;font-family:'Inter',sans-serif;">=</span> <span style="font-family:'Source Serif 4',serif;font-size:24px;">${fmtMoney(twdVal)}</span>`;
+}
+
+// BTC 即時價格:抓一次快取起來,渲染 BTC 持有量那格時用來換算美金/台幣價值
+let btcPriceUsd = null;
+let lastBtcAmount = 0;
+let lastUsFxForBtc = 32.2;
+
+function renderBtcStat(){
+  const el = document.getElementById('btcAmt');
+  if(!el) return;
+  const amountStr = lastBtcAmount.toFixed(3) + ' BTC';
+  if(btcPriceUsd){
+    const usdVal = lastBtcAmount * btcPriceUsd;
+    const twdVal = usdVal * lastUsFxForBtc;
+    el.innerHTML = `<div>${amountStr}</div><div style="margin-top:6px;">${usdEqHtml(usdVal, twdVal)}</div>`;
+  } else {
+    el.textContent = amountStr;
+  }
+}
+
+async function fetchBtcPrice(){
+  try {
+    const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
+    const json = await res.json();
+    if(json && json.bitcoin && typeof json.bitcoin.usd === 'number'){
+      btcPriceUsd = json.bitcoin.usd;
+      renderBtcStat();
+    }
+  } catch(e){ /* 抓不到即時價格就只顯示 BTC 數量,不影響其他資料 */ }
 }
 
 function parseNum(v){
@@ -1288,10 +1316,8 @@ function render(data){
   document.getElementById('usdFxBadge').textContent = `USD匯率 ${usFx.toFixed(2)}`;
 
   document.getElementById('stTwStock').innerHTML = fmtMoney(aTwStock);
-  const usStockCleanStr = fmtUsd(usUsd).replace(/<[^>]*>/g,'');
-  document.getElementById('stUsStock').innerHTML = `<span style="color:var(--teal);font-size:21px;">${usStockCleanStr}</span> <span style="font-size:17px;color:var(--text-muted);font-weight:400;font-family:'Inter',sans-serif;">=</span> <span style="font-family:'Source Serif 4',serif;font-size:24px;">${fmtMoney(aUsStock)}</span>`;
-  const cryptoCleanStr = fmtUsd(cryptoUsd).replace(/<[^>]*>/g,'');
-  document.getElementById('stCrypto').innerHTML = `<span style="color:var(--teal);font-size:21px;">${cryptoCleanStr}</span> <span style="font-size:17px;color:var(--text-muted);font-weight:400;font-family:'Inter',sans-serif;">=</span> <span style="font-family:'Source Serif 4',serif;font-size:24px;">${fmtMoney(aCrypto)}</span>`;
+  document.getElementById('stUsStock').innerHTML = usdEqHtml(usUsd, aUsStock);
+  document.getElementById('stCrypto').innerHTML = usdEqHtml(cryptoUsd, aCrypto);
   document.getElementById('stCash').innerHTML    = fmtMoney(aCash);
   document.getElementById('stForeign').innerHTML = fmtMoney(aForeign);
   
@@ -1377,18 +1403,19 @@ function render(data){
   const cryptoTwd = parseNum(safe(data,19,3));
   const btc = parseNum(safe(data,22,3));
   document.getElementById('cryptoUpdated').textContent = '更新於 ' + cryptoDate;
-  document.getElementById('cryptoUsd').innerHTML = fmtUsd(cryptoUsd);
-  document.getElementById('cryptoTwd').innerHTML = fmtMoney(cryptoTwd);
-  document.getElementById('btcAmt').textContent = btc.toFixed(6) + ' BTC';
+  document.getElementById('cryptoTotal').innerHTML = usdEqHtml(cryptoUsd, cryptoTwd);
+
+  lastBtcAmount = btc;
+  lastUsFxForBtc = usFx;
+  renderBtcStat();
+  fetchBtcPrice();
 
   const stablecoinUsd = getStablecoinTotalUsd();
   const stablecoinTwd = stablecoinUsd * usFx;
   const otherCryptoUsd = cryptoUsd - stablecoinUsd;
   const otherCryptoTwd = cryptoTwd - stablecoinTwd;
-  document.getElementById('stablecoinUsd').innerHTML = fmtUsd(stablecoinUsd);
-  document.getElementById('stablecoinTwd').innerHTML = fmtMoney(stablecoinTwd);
-  document.getElementById('otherCryptoUsd').innerHTML = fmtUsd(otherCryptoUsd);
-  document.getElementById('otherCryptoTwd').innerHTML = fmtMoney(otherCryptoTwd);
+  document.getElementById('stablecoinTotal').innerHTML = usdEqHtml(stablecoinUsd, stablecoinTwd);
+  document.getElementById('otherCryptoTotal').innerHTML = usdEqHtml(otherCryptoUsd, otherCryptoTwd);
 
 
   let wr = 17;
