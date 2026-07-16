@@ -252,7 +252,7 @@
   
   .stat{
     background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;
-    display:flex;flex-direction:column;justify-content:space-between;
+    display:flex;flex-direction:column;justify-content:center;
     transition:border-color .2s, transform .2s;
   }
   .stat:hover{border-color:var(--gold-dim);transform:translateY(-2px);}
@@ -270,12 +270,13 @@
   details.stat-details{
     background:var(--surface);border:1px solid var(--line);border-radius:12px;
     overflow:visible;transition:border-color .2s, transform .2s;position:relative;
+    display:flex;flex-direction:column;
   }
   details.stat-details:hover{border-color:var(--gold-dim);transform:translateY(-2px);}
   details.stat-details[open]{border-color:var(--gold-dim);background:var(--surface-alt);transform:none;}
   summary.stat-summary{
     padding:16px;cursor:pointer;list-style:none;user-select:none;
-    display:flex;flex-direction:column;justify-content:space-between;
+    display:flex;flex-direction:column;justify-content:center;
   }
   summary.stat-summary::-webkit-details-marker{display:none;}
   summary.stat-summary .k{font-size:11px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;letter-spacing:.05em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
@@ -315,8 +316,8 @@
   }
   .cols2{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;align-items:stretch;}
   @media (max-width:900px){ .cols2{grid-template-columns:1fr;} }
-  .cols2 > .card:first-child{display:flex;flex-direction:column;justify-content:center;align-items:stretch;height:100%;}
-  @media (max-width:900px){ .cols2 > .card:first-child{ height:auto; justify-content:flex-start; } }
+  .card-center-v{display:flex !important;flex-direction:column !important;justify-content:center !important;align-items:stretch !important;height:100%;box-sizing:border-box;}
+  @media (max-width:900px){ .card-center-v{ height:auto; justify-content:flex-start !important; } }
 
   /* 關鍵修正：解決手機版表格擠在一起的跑版問題 */
   .table-responsive-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; max-width: 100%; }
@@ -613,7 +614,7 @@
 
     <div class="section-title">美股 <span class="tag" id="usUpdated"></span></div>
     <div class="cols2">
-      <div class="card">
+      <div class="card card-center-v">
         <div class="chip-row chip-row-6">
           <div class="chip"><div class="k">部位金額 USD</div><div class="v" id="usUsd">—</div></div>
           <div class="chip"><div class="k">換算台幣</div><div class="v" id="usTwd">—</div></div>
@@ -634,7 +635,7 @@
 
     <div class="section-title">幣圈資產 <span class="tag" id="cryptoUpdated"></span></div>
     <div class="cols2">
-      <div class="card">
+      <div class="card card-center-v">
         <div class="chip"><div class="k">幣圈總資產</div><div class="v usdeq-wrap" id="cryptoTotal">—</div></div>
         <div class="chip" style="margin-top:12px;">
           <div class="k" style="display:flex; justify-content:space-between; align-items:baseline; gap:8px;">
