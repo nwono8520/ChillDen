@@ -71,14 +71,16 @@
   
   /* 按鈕樣式設定 */
   .btn-group{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
-  button.refresh{
+  .refresh{
     font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.05em;
     background:var(--surface-alt);color:var(--text);border:1px solid var(--line);
     padding:9px 16px;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:8px;
-    transition:all .15s;
+    transition:all .15s;text-decoration:none;
   }
-  button.refresh:hover{border-color:var(--gold-dim);color:var(--gold);}
-  button.refresh:active{transform:translateY(1px);}
+  .refresh:hover{border-color:var(--gold-dim);color:var(--gold);}
+  .refresh:active{transform:translateY(1px);}
+  .refresh.nav-link{border-color:rgba(79,191,159,0.4); color:var(--teal);}
+  .refresh.nav-link:hover{border-color:var(--teal); color:var(--text); background:rgba(79,191,159,0.1);}
   
   /* ✨ AI 財務顧問專屬發光按鈕 */
   button.ai-btn{
@@ -403,8 +405,8 @@
         ⬆️ 匯入資料
       </button>
       <input type="file" id="dashImportFile" accept="application/json" style="display:none" onchange="if(this.files[0]) importDashboardData(this.files[0]); this.value='';">
-      <a class="refresh" href="stablecoin_tracker.html" style="text-decoration:none;" title="前往穩定幣利息追蹤頁面">
-        💰 穩定幣利息追蹤 →
+      <a class="refresh nav-link" href="stablecoin_tracker.html" title="前往穩定幣利息追蹤頁面">
+        🪙 穩定幣利息追蹤 →
       </a>
     </div>
   </div>
