@@ -1,4 +1,24 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>穩定幣利息追蹤</title>
 <style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #0F1517;
+    min-height: 100%;
+  }
+  body {
+    padding: 20px 12px;
+    box-sizing: border-box;
+  }
+  @media (max-width: 700px) {
+    body { padding: 10px 0; }
+  }
+
   @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
   :root {
@@ -227,7 +247,8 @@
     .sc-modal-actions button { flex: 1; }
   }
 </style>
-
+</head>
+<body>
 <div id="sc-root">
   <div class="sc-header">
     <div>
@@ -241,7 +262,7 @@
         <button class="sc-refresh-btn" id="sc-refresh-btn">更新匯率</button>
       </div>
       <div style="display:flex; gap:8px;">
-        <a class="sc-btn secondary" href="asset-dashboard.html" style="padding:6px 12px; font-size:12px; text-decoration:none; display:inline-flex; align-items:center;">← 資產戰情儀表板</a>
+        <a class="sc-btn secondary" href="index.html" style="padding:6px 12px; font-size:12px; text-decoration:none; display:inline-flex; align-items:center;">← 資產戰情儀表板</a>
         <button class="sc-btn secondary" id="sc-export-btn" style="padding:6px 12px; font-size:12px;">匯出資料</button>
         <button class="sc-btn secondary" id="sc-import-btn" style="padding:6px 12px; font-size:12px;">匯入資料</button>
         <input type="file" id="sc-import-file" accept="application/json" style="display:none;">
@@ -1031,3 +1052,5 @@
   init();
 })();
 </script>
+</body>
+</html>
