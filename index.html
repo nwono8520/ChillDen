@@ -464,7 +464,8 @@
         <div class="goal-bars">
           <div class="goal-bar-wrap">
             <div class="k">
-              <span>年度資產目標 NT$<input type="text" inputmode="numeric" id="goalInput" class="goal-input" oninput="onGoalInputChange()" onfocus="onGoalFocus()" onblur="onGoalBlur()"></span>
+              <span>資產目標 NT$<input type="text" inputmode="numeric" id="goalInput" class="goal-input" oninput="onGoalInputChange()" onfocus="onGoalFocus()" onblur="onGoalBlur()"></span>
+              <span id="goalAchievedMsg" style="color:var(--gold); font-weight:600; margin-right:10px; display:none;">資產目標已達成,請新增新目標</span>
               <span id="goalPct" style="color:var(--gold);font-weight:600;">—</span>
             </div>
             <div class="goal-track"><div class="goal-fill" id="goalFill" style="width:0%"></div></div>
@@ -620,7 +621,7 @@
           <div class="chip"><div class="k">投報率</div><div class="v" id="usRoi">—</div></div>
         </div>
       </div>
-      <details class="stat-details" style="align-self:start;">
+      <details class="stat-details" style="align-self:center;">
         <summary class="stat-summary simple-summary">
           <span>美股入金紀錄 <span style="font-size:10px;color:var(--gold);margin-left:2px;">[點擊展開]</span></span>
           <span class="simple-arrow">▾</span>
@@ -700,6 +701,15 @@ function getStablecoinTotalUsd(){
     return list.reduce((sum, h) => sum + (parseFloat(h && h.amount) || 0), 0);
   } catch(e){ return 0; }
 }
+function getBtcTotalAmount(){
+  try {
+    const raw = localStorage.getItem('sc:btcHoldings');
+    if(!raw) return 0;
+    const list = JSON.parse(raw);
+    if(!Array.isArray(list)) return 0;
+    return list.reduce((sum, h) => sum + (parseFloat(h && h.amount) || 0), 0);
+  } catch(e){ return 0; }
+}
 
 // 統一的「$美金 = NT$台幣」單行顯示格式,跟美股帳面那格同一套樣式;字級用 CSS class 控制,手機版才吃得到縮放規則
 function usdEqHtml(usdVal, twdVal){
@@ -711,6 +721,10 @@ function usdEqHtml(usdVal, twdVal){
 let btcPriceUsd = null;
 let lastBtcAmount = 0;
 let lastUsFxForBtc = 32.2;
+let lastCryptoUsd = 0;
+let lastCryptoTwd = 0;
+let lastStablecoinUsd = 0;
+let lastStablecoinTwd = 0;
 
 function renderBtcStat(){
   const el = document.getElementById('btcAmt');
@@ -727,6 +741,17 @@ function renderBtcStat(){
   }
 }
 
+// 其他幣別 = 幣圈總資產 - BTC 資產(換算美金)- 穩定幣資產,抓不到即時 BTC 價格時視為 0,價格抓到後會自動重算一次
+function updateOtherCryptoStat(){
+  const el = document.getElementById('otherCryptoTotal');
+  if(!el) return;
+  const btcValueUsd = btcPriceUsd ? lastBtcAmount * btcPriceUsd : 0;
+  const btcValueTwd = btcValueUsd * lastUsFxForBtc;
+  const otherCryptoUsd = lastCryptoUsd - btcValueUsd - lastStablecoinUsd;
+  const otherCryptoTwd = lastCryptoTwd - btcValueTwd - lastStablecoinTwd;
+  el.innerHTML = usdEqHtml(otherCryptoUsd, otherCryptoTwd);
+}
+
 async function fetchBtcPrice(){
   try {
     const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
@@ -734,6 +759,7 @@ async function fetchBtcPrice(){
     if(json && json.bitcoin && typeof json.bitcoin.usd === 'number'){
       btcPriceUsd = json.bitcoin.usd;
       renderBtcStat();
+      updateOtherCryptoStat();
     }
   } catch(e){ /* 抓不到即時價格就只顯示 BTC 數量,不影響其他資料 */ }
 }
@@ -998,6 +1024,7 @@ function updateGoalUI(){
   lastGoalPct = rawPct;
   document.getElementById('goalPct').innerHTML = fmtPct(rawPct);
   document.getElementById('goalFill').style.width = (barPct*100).toFixed(1) + '%';
+  document.getElementById('goalAchievedMsg').style.display = rawPct >= 1 ? 'inline' : 'none';
 }
 
 // ---- 資產歷史：本機自動記錄每天讀取到的淨資產，畫成走勢圖 ----
@@ -1427,21 +1454,23 @@ function render(data){
 
   const cryptoDate = excelDate(safe(data,17,0));
   const cryptoTwd = parseNum(safe(data,19,3));
-  const btc = parseNum(safe(data,22,3));
+  const btc = getBtcTotalAmount();
   document.getElementById('cryptoUpdated').textContent = '更新於 ' + cryptoDate;
   document.getElementById('cryptoTotal').innerHTML = usdEqHtml(cryptoUsd, cryptoTwd);
 
   lastBtcAmount = btc;
   lastUsFxForBtc = usFx;
+  lastCryptoUsd = cryptoUsd;
+  lastCryptoTwd = cryptoTwd;
   renderBtcStat();
   fetchBtcPrice();
 
   const stablecoinUsd = getStablecoinTotalUsd();
   const stablecoinTwd = stablecoinUsd * usFx;
-  const otherCryptoUsd = cryptoUsd - stablecoinUsd;
-  const otherCryptoTwd = cryptoTwd - stablecoinTwd;
+  lastStablecoinUsd = stablecoinUsd;
+  lastStablecoinTwd = stablecoinTwd;
   document.getElementById('stablecoinTotal').innerHTML = usdEqHtml(stablecoinUsd, stablecoinTwd);
-  document.getElementById('otherCryptoTotal').innerHTML = usdEqHtml(otherCryptoUsd, otherCryptoTwd);
+  updateOtherCryptoStat();
 
 
   let wr = 17;
