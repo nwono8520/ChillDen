@@ -715,6 +715,57 @@ function getBtcTotalAmount(){
   } catch(e){ return 0; }
 }
 
+// 依交易所彙總穩定幣/BTC持倉，供 AI 分析用（金額、佔比、筆數、平均利率概況）
+function getStablecoinExchangeBreakdown(){
+  try {
+    const raw = localStorage.getItem('sc:holdings');
+    if(!raw) return { total: 0, byExchange: [] };
+    const list = JSON.parse(raw);
+    if(!Array.isArray(list) || list.length === 0) return { total: 0, byExchange: [] };
+    const total = list.reduce((s,h) => s + (parseFloat(h.amount)||0), 0);
+    const map = {};
+    list.forEach(h => {
+      const ex = h.exchange || '未分類';
+      if(!map[ex]) map[ex] = { amount: 0, count: 0, coins: {} };
+      map[ex].amount += (parseFloat(h.amount)||0);
+      map[ex].count += 1;
+      const c = h.coin || '未知';
+      map[ex].coins[c] = (map[ex].coins[c]||0) + (parseFloat(h.amount)||0);
+    });
+    const byExchange = Object.keys(map).map(ex => ({
+      exchange: ex,
+      amount: map[ex].amount,
+      pct: total > 0 ? map[ex].amount/total*100 : 0,
+      count: map[ex].count,
+      coins: Object.keys(map[ex].coins).map(c => c + ' $' + fmtInt(map[ex].coins[c])).join('、')
+    })).sort((a,b) => b.amount - a.amount);
+    return { total, byExchange };
+  } catch(e){ return { total: 0, byExchange: [] }; }
+}
+function getBtcExchangeBreakdown(){
+  try {
+    const raw = localStorage.getItem('sc:btcHoldings');
+    if(!raw) return { total: 0, byExchange: [] };
+    const list = JSON.parse(raw);
+    if(!Array.isArray(list) || list.length === 0) return { total: 0, byExchange: [] };
+    const total = list.reduce((s,h) => s + (parseFloat(h.amount)||0), 0);
+    const map = {};
+    list.forEach(h => {
+      const ex = h.exchange || '未分類';
+      if(!map[ex]) map[ex] = { amount: 0, count: 0 };
+      map[ex].amount += (parseFloat(h.amount)||0);
+      map[ex].count += 1;
+    });
+    const byExchange = Object.keys(map).map(ex => ({
+      exchange: ex,
+      amount: map[ex].amount,
+      pct: total > 0 ? map[ex].amount/total*100 : 0,
+      count: map[ex].count
+    })).sort((a,b) => b.amount - a.amount);
+    return { total, byExchange };
+  } catch(e){ return { total: 0, byExchange: [] }; }
+}
+
 // 統一的「$美金 = NT$台幣」單行顯示格式,跟美股帳面那格同一套樣式;字級用 CSS class 控制,手機版才吃得到縮放規則
 function usdEqHtml(usdVal, twdVal){
   const usdStr = fmtUsd(usdVal).replace(/<[^>]*>/g,'');
@@ -851,6 +902,7 @@ let lastGoalValue = 8000000;
 let assetHistory = [];
 let historyRange = '30';
 let latestDataSummary = null; 
+let latestChanges = null;
 
 // 開關白天／夜晚模式
 function applyThemeUI(isLight){
@@ -951,8 +1003,35 @@ function analyzeWithGemini() {
     alert("數據尚未載入完成，請稍候再試！");
     return;
   }
-  
-  const prompt = `你是一位專業的私人財富管理顧問（Private Wealth Manager）與財務風控專家。以下是我目前的「個人資產戰情儀表板」真實數據，請幫我進行全盤檢視與診斷，並給予具體可執行的優化建議：
+
+  const scBreak = getStablecoinExchangeBreakdown();
+  const btcBreak = getBtcExchangeBreakdown();
+
+  const changesBlock = latestChanges ? `
+【五、近期淨資產漲跌】
+- 今日：${latestChanges.day.diff >= 0 ? '+' : ''}NT$ ${fmtInt(latestChanges.day.diff)}（${latestChanges.day.pct.toFixed(2)}%）
+- 本週：${latestChanges.week.diff >= 0 ? '+' : ''}NT$ ${fmtInt(latestChanges.week.diff)}（${latestChanges.week.pct.toFixed(2)}%）
+- 本月：${latestChanges.month.diff >= 0 ? '+' : ''}NT$ ${fmtInt(latestChanges.month.diff)}（${latestChanges.month.pct.toFixed(2)}%）
+- 今年：${latestChanges.year.diff >= 0 ? '+' : ''}NT$ ${fmtInt(latestChanges.year.diff)}（${latestChanges.year.pct.toFixed(2)}%）
+` : '';
+
+  const scBlock = scBreak.byExchange.length ? `
+【六、穩定幣持倉明細（共 $${fmtInt(scBreak.total)} USD）】
+${scBreak.byExchange.map(e => `- ${e.exchange}：$${fmtInt(e.amount)}（佔穩定幣總部位 ${e.pct.toFixed(1)}%，共 ${e.count} 筆，幣別：${e.coins}）`).join('\n')}
+` : `
+【六、穩定幣持倉明細】
+- 目前尚未在穩定幣頁面新增任何部位。
+`;
+
+  const btcBlock = btcBreak.byExchange.length ? `
+【七、BTC 持倉明細（共 ${btcBreak.total.toFixed(8)} BTC）】
+${btcBreak.byExchange.map(e => `- ${e.exchange}：${e.amount.toFixed(8)} BTC（佔 BTC 總部位 ${e.pct.toFixed(1)}%，共 ${e.count} 筆）`).join('\n')}
+` : `
+【七、BTC 持倉明細】
+- 目前尚未在穩定幣頁面新增任何 BTC 部位。
+`;
+
+  const prompt = `你是一位專業的私人財富管理顧問（Private Wealth Manager）與財務風控專家。以下是我目前的「個人資產戰情儀表板」真實數據，請幫我進行全盤檢視與診斷：
 
 【一、核心資產淨值與風控指標】
 - 實際資產淨值（Net Assets）：NT$ ${fmtInt(latestDataSummary.netAssets)}
@@ -977,13 +1056,24 @@ ${latestDataSummary.topTwStocks.map((s, idx) => `${idx+1}. ${s.name}：NT$ ${fmt
 - 股票質借：NT$ ${fmtInt(-Math.abs(latestDataSummary.dStock))}
 - 銀行信貸：NT$ ${fmtInt(-Math.abs(latestDataSummary.dCredit))}
 - 借款（爸）：NT$ ${fmtInt(-Math.abs(latestDataSummary.dParents))}
+${changesBlock}${scBlock}${btcBlock}
+請你從以下面向為我深度剖析，並注意事項後面的補充要求：
 
-請你從以下三個面向為我深度剖析：
-1. 【資產配置與防禦力診斷】：目前的股、幣、現金與外幣比例是否均衡？現金流動性與防禦水位是否安全？
-2. 【槓桿與負債結構評估】：目前 ${latestDataSummary.leverage.toFixed(3)}x 的槓桿倍數與質借/信貸配置是否健康？在當前宏觀環境下有何潛在風險？
-3. 【衝刺年度資產目標戰略】：距離目標 NT$ ${fmtInt(latestDataSummary.goal)} 還剩下約 ${(100 - latestDataSummary.goalPct*100).toFixed(1)}%（約 NT$ ${fmtInt(Math.max(0, latestDataSummary.goal - latestDataSummary.netAssets)/10000)} 萬），剩下的時間內，有什麼具體可執行的投資配置調整或策略，能助我穩健達標？
+1. 【近期資產漲跌原因分析】：根據上面「近期淨資產漲跌」的數字，用簡單明瞭的條列式，列出幾個可能造成這些漲跌的合理原因（例如台股/美股/幣圈當期表現、匯率變動、新增部位等），如果你有掌握到近期相關市場消息也可以一併納入，但請清楚註明哪些是根據我的數據推論、哪些是你所知道的市場背景，不要憑空捏造具體的新聞事件。
 
-請用專業、誠懇且條理分明的繁體中文為我解答！`;
+2. 【資產配置與防禦力診斷】：目前的股、幣、現金與外幣比例是否均衡？現金流動性與防禦水位是否安全？
+
+3. 【穩定幣與 BTC 持倉診斷】：根據上面穩定幣、BTC 在各交易所的分布，是否有過度集中在單一交易所的風險？穩定幣的分散程度、BTC 的配置比重，是否有可以優化的地方？
+
+4. 【槓桿與負債結構評估】：目前 ${latestDataSummary.leverage.toFixed(3)}x 的槓桿倍數與質借/信貸配置是否健康？在當前宏觀環境下有何潛在風險？
+
+5. 【衝刺年度資產目標戰略】：距離目標 NT$ ${fmtInt(latestDataSummary.goal)} 還剩下約 ${(100 - latestDataSummary.goalPct*100).toFixed(1)}%（約 NT$ ${fmtInt(Math.max(0, latestDataSummary.goal - latestDataSummary.netAssets)/10000)} 萬），剩下的時間內，有什麼具體可執行的投資配置調整或策略，能助我穩健達標？
+
+6. 【總結式 AI 綜合分析】：最後請用 4-6 句話幫我做一個總結，扼要點出目前資產狀況的整體健康程度、最值得肯定的地方，以及最需要優先關注的風險或改善點。
+
+補充要求：
+- 請以中立、不偏頗的角度提供建議，避免只給單一立場（例如只講激進或只講保守）的說法；適當時請同時列出不同角度的看法（例如「積極派會怎麼看／保守派會怎麼看」），讓我自己判斷，而不是替我做決定。
+- 請用專業、誠懇且條理分明的繁體中文回答，並多用條列式呈現，方便我快速閱讀。`;
 
   navigator.clipboard.writeText(prompt).then(() => {
     const toast = document.getElementById('aiToast');
@@ -1135,6 +1225,13 @@ function renderChanges(){
   setChangeCard('chgWeek', latest.netAssets - weekBase.netAssets, weekBase.netAssets);
   setChangeCard('chgMonth', latest.netAssets - monthBase.netAssets, monthBase.netAssets);
   setChangeCard('chgYear', latest.netAssets - yearBase.netAssets, yearBase.netAssets);
+
+  latestChanges = {
+    day:   { diff: latest.netAssets - dayBase.netAssets,   pct: dayBase.netAssets ? (latest.netAssets - dayBase.netAssets)/Math.abs(dayBase.netAssets)*100 : 0 },
+    week:  { diff: latest.netAssets - weekBase.netAssets,  pct: weekBase.netAssets ? (latest.netAssets - weekBase.netAssets)/Math.abs(weekBase.netAssets)*100 : 0 },
+    month: { diff: latest.netAssets - monthBase.netAssets, pct: monthBase.netAssets ? (latest.netAssets - monthBase.netAssets)/Math.abs(monthBase.netAssets)*100 : 0 },
+    year:  { diff: latest.netAssets - yearBase.netAssets,  pct: yearBase.netAssets ? (latest.netAssets - yearBase.netAssets)/Math.abs(yearBase.netAssets)*100 : 0 },
+  };
 }
 function setHistoryRange(r){
   historyRange = r;
