@@ -1216,8 +1216,8 @@
     function btcSubLine(btcAmt) {
       if (!btcPriceUsd) return '≈ 價格載入中';
       const usdVal = btcAmt * btcPriceUsd;
-      const usdStr = '<span class="sc-conv-usd" style="white-space:nowrap;">≈\u00A0' + fmtUSD(usdVal) + '</span>';
-      const twdStr = usdToTwd ? ' <span style="white-space:nowrap;">≈\u00A0' + fmtTWD(usdVal * usdToTwd) + '</span>' : '';
+      const usdStr = '<span class="sc-conv-usd">≈\u00A0' + fmtUSD(usdVal) + '</span>';
+      const twdStr = usdToTwd ? '<br>≈\u00A0' + fmtTWD(usdVal * usdToTwd) : '';
       return usdStr + twdStr;
     }
     $('sc-btc-sum-daily-usd').innerHTML = btcSubLine(sumDaily);
