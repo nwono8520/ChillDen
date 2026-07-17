@@ -639,15 +639,15 @@
       <div class="card card-center-v">
         <div class="chip"><div class="k">幣圈總資產</div><div class="v usdeq-wrap" id="cryptoTotal">—</div></div>
         <div class="chip" style="margin-top:12px;">
-          <div class="k" style="display:flex; justify-content:space-between; align-items:baseline; gap:8px;">
-            <span>BTC 持有量</span>
-            <span id="btcCount" style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--text-muted); text-transform:none; white-space:nowrap;">—</span>
+          <div class="k" style="display:flex; justify-content:space-between; align-items:baseline; gap:8px; flex-wrap:wrap;">
+            <span>BTC 持有量 <span style="font-weight:400;color:var(--text-faint);">(抓取自穩定幣頁面)</span></span>
+            <span id="btcCount" style="font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:700; color:var(--teal); text-transform:none; white-space:nowrap;">—</span>
           </div>
           <div class="v usdeq-wrap" id="btcAmt">—</div>
         </div>
         <div class="chip-row-2">
-          <div class="chip"><div class="k">穩定幣資產 <span style="font-weight:400;color:var(--text-faint);">· 讀自穩定幣頁面</span></div><div class="v usdeq-wrap" id="stablecoinTotal">—</div></div>
-          <div class="chip"><div class="k">其他幣別</div><div class="v usdeq-wrap" id="otherCryptoTotal">—</div></div>
+          <div class="chip"><div class="k">穩定幣資產 <span style="font-weight:400;color:var(--text-faint);">(抓取自穩定幣頁面)</span></div><div class="v usdeq-wrap" id="stablecoinTotal">—</div></div>
+          <div class="chip"><div class="k">其他幣別 <span style="font-weight:400;color:var(--text-faint);">(=幣圈總資產-BTC-穩定幣)</span></div><div class="v usdeq-wrap" id="otherCryptoTotal">—</div></div>
         </div>
       </div>
       <div class="card">
