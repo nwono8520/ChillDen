@@ -939,13 +939,13 @@
     });
 
     $('sc-sum-daily-usd').textContent = fmtUSD(sumDaily);
-    $('sc-sum-daily-twd').textContent = usdToTwd ? '≈ ' + fmtTWD(sumDaily * usdToTwd) : '匯率載入中';
+    $('sc-sum-daily-twd').textContent = usdToTwd ? '≈\u00A0' + fmtTWD(sumDaily * usdToTwd) : '匯率載入中';
     $('sc-sum-weekly-usd').textContent = fmtUSD(sumWeekly);
-    $('sc-sum-weekly-twd').textContent = usdToTwd ? '≈ ' + fmtTWD(sumWeekly * usdToTwd) : '匯率載入中';
+    $('sc-sum-weekly-twd').textContent = usdToTwd ? '≈\u00A0' + fmtTWD(sumWeekly * usdToTwd) : '匯率載入中';
     $('sc-sum-monthly-usd').textContent = fmtUSD(sumMonthly);
-    $('sc-sum-monthly-twd').textContent = usdToTwd ? '≈ ' + fmtTWD(sumMonthly * usdToTwd) : '匯率載入中';
+    $('sc-sum-monthly-twd').textContent = usdToTwd ? '≈\u00A0' + fmtTWD(sumMonthly * usdToTwd) : '匯率載入中';
     $('sc-sum-yearly-usd').textContent = fmtUSD(sumYearly);
-    $('sc-sum-yearly-twd').textContent = usdToTwd ? '≈ ' + fmtTWD(sumYearly * usdToTwd) : '匯率載入中';
+    $('sc-sum-yearly-twd').textContent = usdToTwd ? '≈\u00A0' + fmtTWD(sumYearly * usdToTwd) : '匯率載入中';
 
     $('sc-total-usd').textContent = fmtUSDInt(totalInvested);
     $('sc-total-twd').textContent = usdToTwd ? '≈ ' + fmtTWD(totalInvested * usdToTwd) : '≈ 匯率載入中';
@@ -1198,8 +1198,8 @@
     $('sc-btc-total-amount').textContent = totalBtc.toLocaleString('en-US', {maximumFractionDigits: 8}) + ' BTC';
     if (btcPriceUsd) {
       const usdVal = totalBtc * btcPriceUsd;
-      $('sc-btc-total-usd').textContent = '≈ ' + fmtUSD(usdVal);
-      $('sc-btc-total-twd').textContent = usdToTwd ? '≈ ' + fmtTWD(usdVal * usdToTwd) : '≈ 匯率載入中';
+      $('sc-btc-total-usd').textContent = '≈\u00A0' + fmtUSD(usdVal);
+      $('sc-btc-total-twd').textContent = usdToTwd ? '≈\u00A0' + fmtTWD(usdVal * usdToTwd) : '≈ 匯率載入中';
     } else {
       $('sc-btc-total-usd').textContent = '≈ BTC 價格載入中';
       $('sc-btc-total-twd').textContent = '';
@@ -1216,8 +1216,8 @@
     function btcSubLine(btcAmt) {
       if (!btcPriceUsd) return '≈ 價格載入中';
       const usdVal = btcAmt * btcPriceUsd;
-      const usdStr = '<span class="sc-conv-usd">≈ ' + fmtUSD(usdVal) + '</span>';
-      const twdStr = usdToTwd ? ' ≈ ' + fmtTWD(usdVal * usdToTwd) : '';
+      const usdStr = '<span class="sc-conv-usd" style="white-space:nowrap;">≈\u00A0' + fmtUSD(usdVal) + '</span>';
+      const twdStr = usdToTwd ? ' <span style="white-space:nowrap;">≈\u00A0' + fmtTWD(usdVal * usdToTwd) + '</span>' : '';
       return usdStr + twdStr;
     }
     $('sc-btc-sum-daily-usd').innerHTML = btcSubLine(sumDaily);
