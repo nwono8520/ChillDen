@@ -332,9 +332,9 @@
   }
   
   table{width:100%;border-collapse:collapse;font-family:'IBM Plex Mono',monospace;font-size:13px; white-space:nowrap;}
-  th{text-align:right;color:var(--text-muted);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.04em;padding:0 0 10px;border-bottom:1px solid var(--line);}
-  th:first-child,td:first-child{text-align:left;}
-  td{padding:9px 0;border-bottom:1px solid var(--line);text-align:right;}
+  th{text-align:right;color:var(--text-muted);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.04em;padding:0 0 10px 18px;border-bottom:1px solid var(--line);}
+  th:first-child,td:first-child{text-align:left;padding-left:0;}
+  td{padding:9px 0 9px 18px;border-bottom:1px solid var(--line);text-align:right;}
   tr:last-child td{border-bottom:none;}
   .foot-row td{border-top:1px solid var(--gold-dim);border-bottom:none;padding-top:12px;color:var(--gold);font-weight:600;}
 
@@ -469,7 +469,7 @@
           <div class="goal-bar-wrap">
             <div class="k">
               <span>資產目標 NT$<input type="text" inputmode="numeric" id="goalInput" class="goal-input" oninput="onGoalInputChange()" onfocus="onGoalFocus()" onblur="onGoalBlur()"></span>
-              <span id="goalAchievedMsg" style="color:var(--gold); font-weight:600; margin-right:10px; display:none;">目標已達成！請訂定新目標</span>
+              <span id="goalAchievedMsg" style="color:var(--gold); font-weight:600; margin-right:10px; display:none;">資產目標已達成,請新增新目標</span>
               <span id="goalPct" style="color:var(--gold);font-weight:600;">—</span>
             </div>
             <div class="goal-track"><div class="goal-fill" id="goalFill" style="width:0%"></div></div>
@@ -617,11 +617,11 @@
     <div class="cols2">
       <div class="card card-center-v">
         <div class="chip-row chip-row-6">
-          <div class="chip"><div class="k">持有帳面 USD</div><div class="v" id="usUsd">—</div></div>
+          <div class="chip"><div class="k">部位金額 USD</div><div class="v" id="usUsd">—</div></div>
           <div class="chip"><div class="k">換算台幣</div><div class="v" id="usTwd">—</div></div>
           <div class="chip"><div class="k">即時匯率</div><div class="v" id="usFx">—</div></div>
-          <div class="chip"><div class="k">美股總入金 USD</div><div class="v" id="usInvested">—</div></div>
-          <div class="chip"><div class="k">目前損益 USD</div><div class="v" id="usProfit">—</div></div>
+          <div class="chip"><div class="k">總投入 USD</div><div class="v" id="usInvested">—</div></div>
+          <div class="chip"><div class="k">帳面收益 USD</div><div class="v" id="usProfit">—</div></div>
           <div class="chip"><div class="k">投報率</div><div class="v" id="usRoi">—</div></div>
         </div>
       </div>
