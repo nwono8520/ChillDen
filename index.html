@@ -438,6 +438,13 @@
         <svg id="refreshIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
         重新整理
       </button>
+      <button class="refresh" onclick="exportDashboardData()" title="匯出這個網站的所有資料(資產目標、歷史走勢、穩定幣與 BTC 部位),可帶到其他裝置使用">
+        ⬇️ 匯出資料
+      </button>
+      <button class="refresh" onclick="document.getElementById('dashImportFile').click()" title="匯入之前匯出的資料,會同時還原資產儀表板跟穩定幣頁面的資料">
+        ⬆️ 匯入資料
+      </button>
+      <input type="file" id="dashImportFile" accept="application/json" style="display:none" onchange="if(this.files[0]) importDashboardData(this.files[0]); this.value='';">
       <a class="refresh nav-link" href="stablecoin_tracker.html" title="前往穩定幣利息追蹤頁面">
         🪙 穩定幣利息追蹤 →
       </a>
@@ -498,15 +505,6 @@
 
     <div class="section-title" style="flex-wrap:wrap;">
       資產歷史 <span class="tag">淨資產走勢 · 每次成功讀取自動記錄當天數值</span>
-      <div style="margin-left:auto; display:flex; gap:8px; flex-wrap:wrap;">
-        <button class="refresh" onclick="exportDashboardData()" title="匯出目標金額與歷史紀錄,可帶到其他裝置使用" style="padding:6px 12px; font-size:11px;">
-          ⬇️ 匯出資料
-        </button>
-        <button class="refresh" onclick="document.getElementById('dashImportFile').click()" title="匯入之前匯出的資料" style="padding:6px 12px; font-size:11px;">
-          ⬆️ 匯入資料
-        </button>
-        <input type="file" id="dashImportFile" accept="application/json" style="display:none" onchange="if(this.files[0]) importDashboardData(this.files[0]); this.value='';">
-      </div>
     </div>
     <details class="history-details">
       <summary class="history-summary">
@@ -1131,21 +1129,32 @@ function saveHistory(arr){
   try{ localStorage.setItem(HISTORY_KEY, JSON.stringify(arr)); }catch(e){}
 }
 
-// ---- 匯出/匯入本機資料(目標金額、歷史走勢、主題)----
-// 注意:資產本身的數字是即時從 Google 試算表讀進來的,任何裝置打開都會抓到一樣的資料,
-// 不需要匯出;真正只存在「這台裝置」的是你手動設的目標金額,還有這裡自動累積的歷史走勢紀錄。
+// ---- 匯出/匯入全站資料 ----
+// 資產本身的數字是即時從 Google 試算表讀進來的,任何裝置打開都會抓到一樣的資料,不需要匯出。
+// 這裡匯出的是「只存在這台裝置」的東西:資產目標、歷史走勢、主題,
+// 以及穩定幣利息追蹤頁面的部位資料(交易所/幣別清單、穩定幣部位、BTC 部位)——
+// 因為兩個頁面同源、共用瀏覽器的 localStorage,所以可以直接在這裡一次讀寫,不用分開匯出匯入兩次。
+const STABLECOIN_KEYS = ['sc:holdings', 'sc:exchanges', 'sc:coins', 'sc:btcHoldings'];
+
 function exportDashboardData(){
   const payload = {
     theme: localStorage.getItem('dashboardTheme') || 'dark',
     goalTarget: localStorage.getItem('assetGoalTarget') || '',
     history: loadHistory(),
+    stablecoin: {},
     exportedAt: new Date().toISOString()
   };
+  STABLECOIN_KEYS.forEach(key => {
+    const raw = localStorage.getItem(key);
+    if (raw !== null) {
+      try { payload.stablecoin[key] = JSON.parse(raw); } catch(e) { /* skip malformed */ }
+    }
+  });
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'asset-dashboard-data-' + new Date().toISOString().slice(0,10) + '.json';
+  a.download = 'chillden-backup-' + new Date().toISOString().slice(0,10) + '.json';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -1156,7 +1165,7 @@ function importDashboardData(file){
   reader.onload = (e) => {
     try {
       const payload = JSON.parse(e.target.result);
-      if(!confirm('匯入將覆蓋這台裝置上的目標金額與歷史走勢紀錄,確定要繼續嗎?')) return;
+      if(!confirm('匯入將覆蓋這台裝置上的資產目標、歷史走勢，以及穩定幣頁面的交易所/幣別/部位資料，確定要繼續嗎?')) return;
       if(payload.theme === 'light' || payload.theme === 'dark'){
         localStorage.setItem('dashboardTheme', payload.theme);
       }
@@ -1166,7 +1175,14 @@ function importDashboardData(file){
       if(Array.isArray(payload.history)){
         saveHistory(payload.history);
       }
-      alert('匯入成功,即將重新整理頁面套用');
+      if(payload.stablecoin && typeof payload.stablecoin === 'object'){
+        STABLECOIN_KEYS.forEach(key => {
+          if(payload.stablecoin[key] !== undefined){
+            localStorage.setItem(key, JSON.stringify(payload.stablecoin[key]));
+          }
+        });
+      }
+      alert('匯入成功,即將重新整理頁面套用(資產儀表板與穩定幣頁面的資料都已同步更新)');
       location.reload();
     } catch(err){
       alert('檔案格式錯誤,匯入失敗');
