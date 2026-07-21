@@ -241,17 +241,18 @@
     display: block; width: 100%; box-sizing: border-box; margin: 0;
     background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px;
     padding: 8px 10px; font-size: 13px; font-family: var(--font-mono);
-    color: var(--text); color-scheme: dark; cursor: pointer;
+    color: transparent; -webkit-text-fill-color: transparent; color-scheme: dark; cursor: pointer;
   }
+  .sc-date-field input[type=date].has-value { color: var(--text); -webkit-text-fill-color: var(--text); }
   .sc-date-placeholder {
-    position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+    position: absolute; left: 11px; right: 28px; top: 50%; transform: translateY(-50%);
     color: var(--muted); font-size: 13px; font-family: var(--font-body);
-    pointer-events: none; white-space: nowrap;
+    pointer-events: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .sc-date-placeholder.hidden { display: none; }
   .sc-date-field-modal { width: 100%; max-width: 100%; }
   .sc-date-field-modal input[type=date] { padding: 9px 10px; font-size: 16px; }
-  .sc-date-field-modal .sc-date-placeholder { font-size: 16px; left: 12px; }
+  .sc-date-field-modal .sc-date-placeholder { font-size: 16px; left: 12px; right: 34px; }
   .sc-add-row select { min-width: 110px; }
   .sc-btn {
     background: var(--mint); color: #08211A; border: none; border-radius: 8px;
@@ -262,10 +263,10 @@
   @media (max-width: 700px) {
     .sc-add-row { flex-direction: column; align-items: stretch; padding: 12px; }
     .sc-add-row select, .sc-add-row input, .sc-add-row .sc-mode-toggle, .sc-add-row button, .sc-add-row .sc-date-field {
-      width: 100%; font-size: 16px;
+      width: 100%; font-size: 16px; box-sizing: border-box;
     }
     .sc-add-row input[type=number] { width: 100%; }
-    .sc-date-placeholder { font-size: 16px; }
+    .sc-date-placeholder { font-size: 15px; right: 34px; }
   }
 
   .sc-manage-panel { display: none; margin-top: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
@@ -884,12 +885,15 @@
     return parts[0] + '/' + parts[1] + '/' + parts[2];
   }
 
-  // 只在「沒有選日期」時蓋一層「(選填) 到期日設定」提示文字,一旦有值就完全交給瀏覽器原生顯示,避免疊字
+  // 只在「沒有選日期」時蓋一層「(選填) 到期日設定」提示文字並隱藏原生輸入框自己的文字;
+  // 一旦有值就把原生文字打開、藏起我們的提示,兩層文字不會同時顯示,避免疊字
   function updateDatePlaceholder(inputId, placeholderId) {
     const input = $(inputId);
     const placeholder = $(placeholderId);
     if (!input || !placeholder) return;
-    placeholder.classList.toggle('hidden', !!input.value);
+    const hasValue = !!input.value;
+    placeholder.classList.toggle('hidden', hasValue);
+    input.classList.toggle('has-value', hasValue);
   }
 
   function maturityBadgeHtml(dateStr) {
