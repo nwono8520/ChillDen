@@ -126,7 +126,8 @@
     font-size: 15px; font-weight: 600; margin: 28px 0 12px 0;
     display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
   }
-  .sc-manage-toggle { font-size: 12px; color: var(--muted); cursor: pointer; text-decoration: underline; }
+  .sc-manage-toggle { font-size: 12px; color: var(--mint); cursor: pointer; text-decoration: underline; font-weight: 600; }
+  .sc-manage-toggle:hover { color: var(--text); }
 
   .sc-table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; -webkit-overflow-scrolling: touch; }
   table.sc-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 680px; }
@@ -294,7 +295,7 @@
         <button class="sc-refresh-btn" id="sc-refresh-btn">更新匯率</button>
       </div>
       <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
-        <a class="sc-btn secondary" href="index.html" style="padding:6px 12px; font-size:12px; text-decoration:none; display:inline-flex; align-items:center;">← 資產戰情儀表板</a>
+        <a class="sc-btn secondary" href="index.html" style="padding:6px 12px; font-size:12px; text-decoration:none; display:inline-flex; align-items:center;">← 資產儀表板</a>
       </div>
     </div>
   </div>
@@ -335,7 +336,7 @@
 
   <div class="sc-section-title">
     <span>穩定幣 (Stable Coin)</span>
-    <span class="sc-manage-toggle" id="sc-manage-toggle">管理交易所 / 幣別</span>
+    <span class="sc-manage-toggle" id="sc-manage-toggle">✎ 管理交易所 / 幣別</span>
   </div>
 
   <div class="sc-manage-panel" id="sc-manage-panel">
@@ -396,7 +397,7 @@
   </div>
 
   <div class="sc-footnote" id="sc-footnote">
-    利息估算方式:單一利率採單利,日利息 = 金額 × 年化 ÷ 365、週利息 = 金額 × 年化 ÷ 52、月利息 = 金額 × 年化 ÷ 12。階梯利率則依金額落在哪些級距分段計算後,再換算日/週/月利息。總投入是把所有部位金額直接加總,假設每種穩定幣都約等於 1 美元,實際可能有些微價差。實際交易所可能用不同天數或每日複利計算,僅供概算參考。資料只存在「這個裝置的這個瀏覽器」裡,不會自動同步到其他裝置;要換電腦或手機使用時,請到「資產戰情儀表板」頁面按「匯出資料」,那邊會把這個頁面跟資產儀表板的資料一起打包成一個檔案,到另一台裝置的資產儀表板按「匯入資料」讀取,兩邊就會同時更新。
+    利息估算方式:單一利率採單利,日利息 = 金額 × 年化 ÷ 365、週利息 = 金額 × 年化 ÷ 52、月利息 = 金額 × 年化 ÷ 12。階梯利率則依金額落在哪些級距分段計算後,再換算日/週/月利息。總投入是把所有部位金額直接加總,假設每種穩定幣都約等於 1 美元,實際可能有些微價差。實際交易所可能用不同天數或每日複利計算,僅供概算參考。資料只存在「這個裝置的這個瀏覽器」裡,不會自動同步到其他裝置;要換電腦或手機使用時,請到「資產儀表板」頁面按「匯出資料」,那邊會把這個頁面跟資產儀表板的資料一起打包成一個檔案,到另一台裝置的資產儀表板按「匯入資料」讀取,兩邊就會同時更新。
   </div>
 
   <div class="sc-section-title" style="margin-top:36px;">
