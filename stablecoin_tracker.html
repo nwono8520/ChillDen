@@ -235,10 +235,20 @@
     border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: var(--font-body);
   }
   .sc-add-row input[type=number] { width: 100px; font-family: var(--font-mono); }
-  .sc-add-row input[type=date] {
-    width: 150px; font-family: var(--font-mono); color-scheme: dark;
-    color: var(--text); -webkit-text-fill-color: var(--text);
+  .sc-date-field { position: relative; width: 170px; }
+  .sc-date-field input[type=date] {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    opacity: 0; margin: 0; padding: 0; border: none; cursor: pointer; z-index: 2;
   }
+  .sc-date-label {
+    display: flex; align-items: center; width: 100%; box-sizing: border-box;
+    background: var(--surface-2); border: 1px solid var(--line); color: var(--muted);
+    border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: var(--font-body);
+    pointer-events: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .sc-date-label.has-value { color: var(--text); font-family: var(--font-mono); font-weight: 600; }
+  .sc-date-field-modal { width: 100%; }
+  .sc-date-field-modal .sc-date-label { padding: 9px 10px; font-size: 16px; }
   .sc-add-row select { min-width: 110px; }
   .sc-btn {
     background: var(--mint); color: #08211A; border: none; border-radius: 8px;
@@ -248,10 +258,11 @@
   .sc-btn.secondary { background: var(--surface-2); color: var(--text); border: 1px solid var(--line); }
   @media (max-width: 700px) {
     .sc-add-row { flex-direction: column; align-items: stretch; padding: 12px; }
-    .sc-add-row select, .sc-add-row input, .sc-add-row .sc-mode-toggle, .sc-add-row button {
+    .sc-add-row select, .sc-add-row input, .sc-add-row .sc-mode-toggle, .sc-add-row button, .sc-add-row .sc-date-field {
       width: 100%; font-size: 16px;
     }
     .sc-add-row input[type=number] { width: 100%; }
+    .sc-date-label { font-size: 16px; }
   }
 
   .sc-manage-panel { display: none; margin-top: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
@@ -409,7 +420,10 @@
     </div>
     <input type="number" id="sc-add-apy" placeholder="年化 %" min="0" step="any">
     <button class="sc-btn secondary" id="sc-tier-edit-btn" style="display:none;">設定階梯</button>
-    <input type="date" id="sc-add-maturity" title="到期日(選填,不填代表活期沒有到期日,例如 Pendle PT 這種固定到期的產品才需要填)">
+    <div class="sc-date-field" id="sc-add-maturity-field">
+      <input type="date" id="sc-add-maturity" title="到期日(選填,不填代表活期沒有到期日,例如 Pendle PT 這種固定到期的產品才需要填)">
+      <span class="sc-date-label" id="sc-add-maturity-label">(選填) 到期日設定</span>
+    </div>
     <button class="sc-btn" id="sc-add-holding-btn">新增部位</button>
   </div>
 
@@ -541,7 +555,10 @@
     </div>
     <div class="sc-modal-field">
       <label>到期日(選填,不填代表活期沒有到期日)</label>
-      <input type="date" id="sc-edit-maturity">
+      <div class="sc-date-field sc-date-field-modal">
+        <input type="date" id="sc-edit-maturity">
+        <span class="sc-date-label" id="sc-edit-maturity-label">(選填) 到期日設定</span>
+      </div>
     </div>
     <div class="sc-modal-actions">
       <button class="sc-btn secondary" id="sc-edit-cancel-btn">取消</button>
@@ -853,6 +870,21 @@
     return parts[0] + '/' + parts[1] + '/' + parts[2];
   }
 
+  // 讓自訂的日期文字顯示跟底層原生 input[type=date] 的值保持同步:
+  // 沒選日期就顯示「(選填) 到期日設定」,選了就顯示 YYYY/MM/DD,不會被瀏覽器自己塞今天的日期誤導
+  function syncDateLabel(inputId, labelId) {
+    const input = $(inputId);
+    const label = $(labelId);
+    if (!input || !label) return;
+    if (input.value) {
+      label.textContent = fmtDateTW(input.value);
+      label.classList.add('has-value');
+    } else {
+      label.textContent = '(選填) 到期日設定';
+      label.classList.remove('has-value');
+    }
+  }
+
   function maturityBadgeHtml(dateStr) {
     if (!dateStr) return '';
     const today = new Date();
@@ -878,10 +910,15 @@
   function renderUpdatedIndicator(elementId, list) {
     const el = $(elementId);
     if (!el) return;
-    const dates = list.map(h => h.lastUpdated).filter(Boolean);
-    if (dates.length === 0) {
+    if (list.length === 0) {
       el.textContent = '';
       el.classList.remove('stale');
+      return;
+    }
+    const dates = list.map(h => h.lastUpdated).filter(Boolean);
+    if (dates.length === 0) {
+      el.textContent = '尚無更新紀錄(編輯任一筆即可開始追蹤)';
+      el.classList.add('stale');
       return;
     }
     const mostRecent = dates.reduce((a, b) => (a > b ? a : b));
@@ -1142,6 +1179,7 @@
     coinSel.value = h.coin;
     $('sc-edit-amount').value = h.amount;
     $('sc-edit-maturity').value = h.maturityDate || '';
+    syncDateLabel('sc-edit-maturity', 'sc-edit-maturity-label');
 
     if (h.mode === 'tiered' && Array.isArray(h.tiers) && h.tiers.length) {
       editTierDraft = h.tiers.map(t => ({ max: (t.max === null || t.max === undefined) ? '' : String(t.max), rate: String(t.rate) }));
@@ -1453,6 +1491,9 @@
   function bindEvents() {
     $('sc-refresh-btn').onclick = fetchRate;
 
+    $('sc-add-maturity').addEventListener('change', () => syncDateLabel('sc-add-maturity', 'sc-add-maturity-label'));
+    $('sc-edit-maturity').addEventListener('change', () => syncDateLabel('sc-edit-maturity', 'sc-edit-maturity-label'));
+
     document.querySelectorAll('.sc-th-sortable').forEach((th) => {
       th.onclick = () => {
         const key = th.dataset.sort;
@@ -1548,6 +1589,7 @@
       $('sc-add-amount').value = '';
       $('sc-add-apy').value = '';
       $('sc-add-maturity').value = '';
+      syncDateLabel('sc-add-maturity', 'sc-add-maturity-label');
       tierDraft = [{ max: '', rate: '' }];
       $('sc-tier-panel').style.display = 'none';
       await saveHoldings();
