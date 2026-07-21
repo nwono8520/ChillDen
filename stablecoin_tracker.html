@@ -150,6 +150,19 @@
   .sc-rate-cell .sc-tiered-note { font-size: 10px; color: var(--mint); cursor: pointer; text-decoration: underline; background: none; border: none; padding: 0; font-family: var(--font-body); }
   .sc-rate-cell .sc-tiered-note:hover { color: var(--text); }
 
+  .sc-maturity-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 10px; font-family: var(--font-mono); padding: 2px 7px; border-radius: 10px;
+    margin-top: 3px; white-space: nowrap; border: 1px solid; line-height: 1.6;
+  }
+  .sc-maturity-badge.normal { color: var(--muted); border-color: var(--line); background: var(--surface-2); }
+  .sc-maturity-badge.soon { color: var(--gold); border-color: rgba(227,181,95,0.5); background: rgba(227,181,95,0.12); }
+  .sc-maturity-badge.urgent { color: var(--coral); border-color: rgba(232,131,107,0.5); background: rgba(232,131,107,0.12); }
+  .sc-maturity-badge.expired { color: var(--coral); border-color: var(--coral); background: rgba(232,131,107,0.2); font-weight: 700; }
+  @media (max-width: 700px) {
+    .sc-maturity-badge { font-size: 11px; padding: 3px 8px; }
+  }
+
   .sc-th-sortable { cursor: pointer; user-select: none; }
   .sc-th-sortable:hover { color: var(--text); }
   .sc-sort-arrow { font-size: 10px; color: var(--muted); margin-left: 3px; opacity: 0.55; display: inline-block; }
@@ -220,6 +233,7 @@
     border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: var(--font-body);
   }
   .sc-add-row input[type=number] { width: 100px; font-family: var(--font-mono); }
+  .sc-add-row input[type=date] { font-family: var(--font-mono); color-scheme: dark; min-width: 148px; }
   .sc-add-row select { min-width: 110px; }
   .sc-btn {
     background: var(--mint); color: #08211A; border: none; border-radius: 8px;
@@ -274,6 +288,7 @@
     background: var(--surface-2); border: 1px solid var(--line); color: var(--text);
     border-radius: 8px; padding: 9px 10px; font-size: 16px; font-family: var(--font-body); width: 100%;
   }
+  .sc-modal-field input[type=date] { color-scheme: dark; font-family: var(--font-mono); }
   .sc-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
   @media (max-width: 700px) {
     .sc-modal { padding: 18px; border-radius: 14px; }
@@ -386,6 +401,7 @@
     </div>
     <input type="number" id="sc-add-apy" placeholder="年化 %" min="0" step="any">
     <button class="sc-btn secondary" id="sc-tier-edit-btn" style="display:none;">設定階梯</button>
+    <input type="date" id="sc-add-maturity" title="到期日(選填,不填代表活期沒有到期日,例如 Pendle PT 這種固定到期的產品才需要填)">
     <button class="sc-btn" id="sc-add-holding-btn">新增部位</button>
   </div>
 
@@ -397,7 +413,7 @@
   </div>
 
   <div class="sc-footnote" id="sc-footnote">
-    利息估算方式:單一利率採單利,日利息 = 金額 × 年化 ÷ 365、週利息 = 金額 × 年化 ÷ 52、月利息 = 金額 × 年化 ÷ 12。階梯利率則依金額落在哪些級距分段計算後,再換算日/週/月利息。總投入是把所有部位金額直接加總,假設每種穩定幣都約等於 1 美元,實際可能有些微價差。實際交易所可能用不同天數或每日複利計算,僅供概算參考。資料只存在「這個裝置的這個瀏覽器」裡,不會自動同步到其他裝置;要換電腦或手機使用時,請到「資產儀表板」頁面按「匯出資料」,那邊會把這個頁面跟資產儀表板的資料一起打包成一個檔案,到另一台裝置的資產儀表板按「匯入資料」讀取,兩邊就會同時更新。
+    利息估算方式:單一利率採單利,日利息 = 金額 × 年化 ÷ 365、週利息 = 金額 × 年化 ÷ 52、月利息 = 金額 × 年化 ÷ 12。階梯利率則依金額落在哪些級距分段計算後,再換算日/週/月利息。到期日是選填欄位,不填代表活期沒有到期日,適合 Pendle PT 這類固定到期的產品,到期前 30 天會標黃提醒、7 天內標紅提醒。總投入是把所有部位金額直接加總,假設每種穩定幣都約等於 1 美元,實際可能有些微價差。實際交易所可能用不同天數或每日複利計算,僅供概算參考。資料只存在「這個裝置的這個瀏覽器」裡,不會自動同步到其他裝置;要換電腦或手機使用時,請到「資產儀表板」頁面按「匯出資料」,那邊會把這個頁面跟資產儀表板的資料一起打包成一個檔案,到另一台裝置的資產儀表板按「匯入資料」讀取,兩邊就會同時更新。
   </div>
 
   <div class="sc-section-title" style="margin-top:36px;">
@@ -513,6 +529,10 @@
       <div id="sc-edit-tier-rows"></div>
       <button class="sc-btn secondary" id="sc-edit-tier-add-row">+ 新增一段</button>
       <div class="sc-tier-preview" id="sc-edit-tier-preview"></div>
+    </div>
+    <div class="sc-modal-field">
+      <label>到期日(選填,不填代表活期沒有到期日)</label>
+      <input type="date" id="sc-edit-maturity">
     </div>
     <div class="sc-modal-actions">
       <button class="sc-btn secondary" id="sc-edit-cancel-btn">取消</button>
@@ -816,6 +836,35 @@
     }).join(' / ');
   }
 
+  // 到期日:YYYY-MM-DD (input[type=date] 原始值) -> 台灣習慣的 YYYY/MM/DD 顯示格式
+  function fmtDateTW(dateStr) {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return dateStr;
+    return parts[0] + '/' + parts[1] + '/' + parts[2];
+  }
+
+  function maturityBadgeHtml(dateStr) {
+    if (!dateStr) return '';
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const target = new Date(dateStr + 'T00:00:00');
+    const diffDays = Math.round((target - today) / 86400000);
+    let cls, label;
+    if (diffDays < 0) {
+      cls = 'expired'; label = '已到期';
+    } else if (diffDays === 0) {
+      cls = 'urgent'; label = '今天到期';
+    } else if (diffDays <= 7) {
+      cls = 'urgent'; label = '剩 ' + diffDays + ' 天';
+    } else if (diffDays <= 30) {
+      cls = 'soon'; label = '剩 ' + diffDays + ' 天';
+    } else {
+      cls = 'normal'; label = '剩 ' + diffDays + ' 天';
+    }
+    return '<span class="sc-maturity-badge ' + cls + '">🗓 ' + fmtDateTW(dateStr) + ' · ' + label + '</span>';
+  }
+
   function renderChips(containerId, list, onDelete, colorFn) {
     const el = $(containerId);
     el.innerHTML = '';
@@ -910,12 +959,13 @@
       sumDaily += daily; sumWeekly += weekly; sumMonthly += monthly; sumYearly += yearly;
       totalInvested += h.amount;
       const effectiveRate = h.amount > 0 ? (yearly / h.amount * 100) : 0;
+      const maturityHtml = maturityBadgeHtml(h.maturityDate);
       let rateCell;
       if (h.mode === 'tiered' && Array.isArray(h.tiers)) {
         rateCell = '<div class="sc-rate-cell"><span>階梯 (~' + effectiveRate.toFixed(2) + '%)</span>' +
-          '<button type="button" class="sc-tiered-note" data-tier-info-id="' + h.id + '">級距明細 ⓘ</button></div>';
+          '<button type="button" class="sc-tiered-note" data-tier-info-id="' + h.id + '">級距明細 ⓘ</button>' + maturityHtml + '</div>';
       } else {
-        rateCell = '<div class="sc-rate-cell"><span>' + h.apy + '%</span></div>';
+        rateCell = '<div class="sc-rate-cell"><span>' + h.apy + '%</span>' + maturityHtml + '</div>';
       }
       const tr = document.createElement('tr');
       tr.innerHTML =
@@ -1061,6 +1111,7 @@
     exSel.value = h.exchange;
     coinSel.value = h.coin;
     $('sc-edit-amount').value = h.amount;
+    $('sc-edit-maturity').value = h.maturityDate || '';
 
     if (h.mode === 'tiered' && Array.isArray(h.tiers) && h.tiers.length) {
       editTierDraft = h.tiers.map(t => ({ max: (t.max === null || t.max === undefined) ? '' : String(t.max), rate: String(t.rate) }));
@@ -1433,6 +1484,7 @@
       const exchange = $('sc-add-exchange-select').value;
       const coin = $('sc-add-coin-select').value;
       const amount = parseFloat($('sc-add-amount').value);
+      const maturityDate = $('sc-add-maturity').value || null;
       if (!exchange || !coin || isNaN(amount) || amount <= 0) {
         alert('請確認交易所、幣別、金額都有正確填寫');
         return;
@@ -1446,18 +1498,19 @@
           alert('請至少設定一段階梯利率');
           return;
         }
-        newHolding = { id: uid(), exchange, coin, amount, mode: 'tiered', tiers: validTiers };
+        newHolding = { id: uid(), exchange, coin, amount, mode: 'tiered', tiers: validTiers, maturityDate };
       } else {
         const apy = parseFloat($('sc-add-apy').value);
         if (isNaN(apy) || apy < 0) {
           alert('請確認年化利率有正確填寫');
           return;
         }
-        newHolding = { id: uid(), exchange, coin, amount, mode: 'flat', apy };
+        newHolding = { id: uid(), exchange, coin, amount, mode: 'flat', apy, maturityDate };
       }
       holdings.push(newHolding);
       $('sc-add-amount').value = '';
       $('sc-add-apy').value = '';
+      $('sc-add-maturity').value = '';
       tierDraft = [{ max: '', rate: '' }];
       $('sc-tier-panel').style.display = 'none';
       await saveHoldings();
@@ -1514,6 +1567,7 @@
       const exchange = $('sc-edit-exchange-select').value;
       const coin = $('sc-edit-coin-select').value;
       const amount = parseFloat($('sc-edit-amount').value);
+      const maturityDate = $('sc-edit-maturity').value || null;
       if (!exchange || !coin || isNaN(amount) || amount <= 0) {
         alert('請確認交易所、幣別、金額都有正確填寫');
         return;
@@ -1527,14 +1581,14 @@
           alert('請至少設定一段階梯利率');
           return;
         }
-        updated = { id: editHoldingId, exchange, coin, amount, mode: 'tiered', tiers: validTiers };
+        updated = { id: editHoldingId, exchange, coin, amount, mode: 'tiered', tiers: validTiers, maturityDate };
       } else {
         const apy = parseFloat($('sc-edit-apy').value);
         if (isNaN(apy) || apy < 0) {
           alert('請確認年化利率有正確填寫');
           return;
         }
-        updated = { id: editHoldingId, exchange, coin, amount, mode: 'flat', apy };
+        updated = { id: editHoldingId, exchange, coin, amount, mode: 'flat', apy, maturityDate };
       }
       holdings[idx] = updated;
       await saveHoldings();
