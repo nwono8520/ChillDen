@@ -155,7 +155,9 @@
     font-size: 10px; font-family: var(--font-mono); padding: 2px 7px; border-radius: 10px;
     margin-top: 3px; white-space: nowrap; border: 1px solid; line-height: 1.6;
   }
-  .sc-maturity-badge.normal { color: var(--muted); border-color: var(--line); background: var(--surface-2); }
+  .sc-maturity-badge.normal { color: var(--mint); border-color: rgba(82,214,174,0.4); background: rgba(82,214,174,0.1); }
+  .sc-maturity-badge.fresh { color: var(--muted); border-color: var(--line); background: var(--surface-2); }
+  .sc-maturity-badge.stale { color: var(--gold); border-color: rgba(227,181,95,0.5); background: rgba(227,181,95,0.12); }
   .sc-maturity-badge.soon { color: var(--gold); border-color: rgba(227,181,95,0.5); background: rgba(227,181,95,0.12); }
   .sc-maturity-badge.urgent { color: var(--coral); border-color: rgba(232,131,107,0.5); background: rgba(232,131,107,0.12); }
   .sc-maturity-badge.expired { color: var(--coral); border-color: var(--coral); background: rgba(232,131,107,0.2); font-weight: 700; }
@@ -233,7 +235,7 @@
     border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: var(--font-body);
   }
   .sc-add-row input[type=number] { width: 100px; font-family: var(--font-mono); }
-  .sc-add-row input[type=date] { font-family: var(--font-mono); color-scheme: dark; min-width: 148px; }
+  .sc-add-row input#sc-add-maturity { width: 150px; font-family: var(--font-mono); }
   .sc-add-row select { min-width: 110px; }
   .sc-btn {
     background: var(--mint); color: #08211A; border: none; border-radius: 8px;
@@ -401,7 +403,7 @@
     </div>
     <input type="number" id="sc-add-apy" placeholder="年化 %" min="0" step="any">
     <button class="sc-btn secondary" id="sc-tier-edit-btn" style="display:none;">設定階梯</button>
-    <input type="date" id="sc-add-maturity" title="到期日(選填,不填代表活期沒有到期日,例如 Pendle PT 這種固定到期的產品才需要填)">
+    <input type="text" id="sc-add-maturity" placeholder="到期日 YYYY-MM-DD" title="到期日(選填,不填代表活期沒有到期日,例如 Pendle PT 這種固定到期的產品才需要填),格式範例:2026-12-25">
     <button class="sc-btn" id="sc-add-holding-btn">新增部位</button>
   </div>
 
@@ -413,7 +415,7 @@
   </div>
 
   <div class="sc-footnote" id="sc-footnote">
-    利息估算方式:單一利率採單利,日利息 = 金額 × 年化 ÷ 365、週利息 = 金額 × 年化 ÷ 52、月利息 = 金額 × 年化 ÷ 12。階梯利率則依金額落在哪些級距分段計算後,再換算日/週/月利息。到期日是選填欄位,不填代表活期沒有到期日,適合 Pendle PT 這類固定到期的產品,到期前 30 天會標黃提醒、7 天內標紅提醒。總投入是把所有部位金額直接加總,假設每種穩定幣都約等於 1 美元,實際可能有些微價差。實際交易所可能用不同天數或每日複利計算,僅供概算參考。資料只存在「這個裝置的這個瀏覽器」裡,不會自動同步到其他裝置;要換電腦或手機使用時,請到「資產儀表板」頁面按「匯出資料」,那邊會把這個頁面跟資產儀表板的資料一起打包成一個檔案,到另一台裝置的資產儀表板按「匯入資料」讀取,兩邊就會同時更新。
+    利息估算方式:單一利率採單利,日利息 = 金額 × 年化 ÷ 365、週利息 = 金額 × 年化 ÷ 52、月利息 = 金額 × 年化 ÷ 12。階梯利率則依金額落在哪些級距分段計算後,再換算日/週/月利息。到期日是選填欄位,格式請填 YYYY-MM-DD(例如 2026-12-25),不填代表活期沒有到期日,適合 Pendle PT 這類固定到期的產品,到期前 30 天會標黃提醒、7 天內標紅提醒。每筆部位下面也會顯示「幾天前更新」,超過 30 天沒回來動過就會標黃,提醒你該去交易所核對利率有沒有變動,只要按一次編輯儲存就會刷新這個時間。總投入是把所有部位金額直接加總,假設每種穩定幣都約等於 1 美元,實際可能有些微價差。實際交易所可能用不同天數或每日複利計算,僅供概算參考。資料只存在「這個裝置的這個瀏覽器」裡,不會自動同步到其他裝置;要換電腦或手機使用時,請到「資產儀表板」頁面按「匯出資料」,那邊會把這個頁面跟資產儀表板的資料一起打包成一個檔案,到另一台裝置的資產儀表板按「匯入資料」讀取,兩邊就會同時更新。
   </div>
 
   <div class="sc-section-title" style="margin-top:36px;">
@@ -532,7 +534,7 @@
     </div>
     <div class="sc-modal-field">
       <label>到期日(選填,不填代表活期沒有到期日)</label>
-      <input type="date" id="sc-edit-maturity">
+      <input type="text" id="sc-edit-maturity" placeholder="YYYY-MM-DD,例如 2026-12-25">
     </div>
     <div class="sc-modal-actions">
       <button class="sc-btn secondary" id="sc-edit-cancel-btn">取消</button>
@@ -865,6 +867,18 @@
     return '<span class="sc-maturity-badge ' + cls + '">🗓 ' + fmtDateTW(dateStr) + ' · ' + label + '</span>';
   }
 
+  // 利率最後更新時間:超過 30 天沒回來核對過,就標黃提醒你該去交易所確認利率有沒有變動
+  function lastUpdatedBadgeHtml(dateStr) {
+    if (!dateStr) return '';
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const updated = new Date(dateStr + 'T00:00:00');
+    const diffDays = Math.round((today - updated) / 86400000);
+    const cls = diffDays > 30 ? 'stale' : 'fresh';
+    const label = diffDays <= 0 ? '今天更新' : diffDays + ' 天前更新';
+    return '<span class="sc-maturity-badge ' + cls + '" title="上次確認利率的日期:' + fmtDateTW(dateStr) + '">🕓 ' + label + '</span>';
+  }
+
   function renderChips(containerId, list, onDelete, colorFn) {
     const el = $(containerId);
     el.innerHTML = '';
@@ -960,12 +974,13 @@
       totalInvested += h.amount;
       const effectiveRate = h.amount > 0 ? (yearly / h.amount * 100) : 0;
       const maturityHtml = maturityBadgeHtml(h.maturityDate);
+      const updatedHtml = lastUpdatedBadgeHtml(h.lastUpdated);
       let rateCell;
       if (h.mode === 'tiered' && Array.isArray(h.tiers)) {
         rateCell = '<div class="sc-rate-cell"><span>階梯 (~' + effectiveRate.toFixed(2) + '%)</span>' +
-          '<button type="button" class="sc-tiered-note" data-tier-info-id="' + h.id + '">級距明細 ⓘ</button>' + maturityHtml + '</div>';
+          '<button type="button" class="sc-tiered-note" data-tier-info-id="' + h.id + '">級距明細 ⓘ</button>' + updatedHtml + maturityHtml + '</div>';
       } else {
-        rateCell = '<div class="sc-rate-cell"><span>' + h.apy + '%</span>' + maturityHtml + '</div>';
+        rateCell = '<div class="sc-rate-cell"><span>' + h.apy + '%</span>' + updatedHtml + maturityHtml + '</div>';
       }
       const tr = document.createElement('tr');
       tr.innerHTML =
@@ -1484,9 +1499,14 @@
       const exchange = $('sc-add-exchange-select').value;
       const coin = $('sc-add-coin-select').value;
       const amount = parseFloat($('sc-add-amount').value);
-      const maturityDate = $('sc-add-maturity').value || null;
+      const maturityDate = $('sc-add-maturity').value.trim() || null;
+      const today = new Date().toISOString().slice(0, 10);
       if (!exchange || !coin || isNaN(amount) || amount <= 0) {
         alert('請確認交易所、幣別、金額都有正確填寫');
+        return;
+      }
+      if (maturityDate && !/^\d{4}-\d{2}-\d{2}$/.test(maturityDate)) {
+        alert('到期日格式請填 YYYY-MM-DD,例如 2026-12-25');
         return;
       }
       let newHolding;
@@ -1498,14 +1518,14 @@
           alert('請至少設定一段階梯利率');
           return;
         }
-        newHolding = { id: uid(), exchange, coin, amount, mode: 'tiered', tiers: validTiers, maturityDate };
+        newHolding = { id: uid(), exchange, coin, amount, mode: 'tiered', tiers: validTiers, maturityDate, lastUpdated: today };
       } else {
         const apy = parseFloat($('sc-add-apy').value);
         if (isNaN(apy) || apy < 0) {
           alert('請確認年化利率有正確填寫');
           return;
         }
-        newHolding = { id: uid(), exchange, coin, amount, mode: 'flat', apy, maturityDate };
+        newHolding = { id: uid(), exchange, coin, amount, mode: 'flat', apy, maturityDate, lastUpdated: today };
       }
       holdings.push(newHolding);
       $('sc-add-amount').value = '';
@@ -1567,9 +1587,14 @@
       const exchange = $('sc-edit-exchange-select').value;
       const coin = $('sc-edit-coin-select').value;
       const amount = parseFloat($('sc-edit-amount').value);
-      const maturityDate = $('sc-edit-maturity').value || null;
+      const maturityDate = $('sc-edit-maturity').value.trim() || null;
+      const today = new Date().toISOString().slice(0, 10);
       if (!exchange || !coin || isNaN(amount) || amount <= 0) {
         alert('請確認交易所、幣別、金額都有正確填寫');
+        return;
+      }
+      if (maturityDate && !/^\d{4}-\d{2}-\d{2}$/.test(maturityDate)) {
+        alert('到期日格式請填 YYYY-MM-DD,例如 2026-12-25');
         return;
       }
       let updated;
@@ -1581,14 +1606,14 @@
           alert('請至少設定一段階梯利率');
           return;
         }
-        updated = { id: editHoldingId, exchange, coin, amount, mode: 'tiered', tiers: validTiers, maturityDate };
+        updated = { id: editHoldingId, exchange, coin, amount, mode: 'tiered', tiers: validTiers, maturityDate, lastUpdated: today };
       } else {
         const apy = parseFloat($('sc-edit-apy').value);
         if (isNaN(apy) || apy < 0) {
           alert('請確認年化利率有正確填寫');
           return;
         }
-        updated = { id: editHoldingId, exchange, coin, amount, mode: 'flat', apy, maturityDate };
+        updated = { id: editHoldingId, exchange, coin, amount, mode: 'flat', apy, maturityDate, lastUpdated: today };
       }
       holdings[idx] = updated;
       await saveHoldings();
