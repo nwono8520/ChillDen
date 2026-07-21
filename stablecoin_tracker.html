@@ -154,6 +154,20 @@
   .sc-sort-arrow { font-size: 10px; color: var(--muted); margin-left: 3px; opacity: 0.55; display: inline-block; }
   .sc-sort-arrow.active { color: var(--mint); opacity: 1; }
 
+  .sc-icon-btn.note { position: relative; font-size: 12px; }
+  .sc-icon-btn.note.has-note { color: var(--gold); border-color: var(--gold); }
+  .sc-icon-btn.note:hover { color: var(--gold); border-color: var(--gold); }
+  .sc-note-tooltip {
+    position: absolute; bottom: calc(100% + 8px); right: -6px; z-index: 60;
+    background: #1E282C; border: 1px solid #2A363A; border-radius: 8px;
+    padding: 10px 12px; font-size: 12px; color: var(--text); font-family: var(--font-body);
+    width: 200px; max-width: 60vw; white-space: normal; text-align: left; line-height: 1.5;
+    opacity: 0; pointer-events: none; transform: translateY(4px);
+    transition: opacity .15s, transform .15s;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.45);
+  }
+  .sc-icon-btn.note:hover .sc-note-tooltip { opacity: 1; pointer-events: auto; transform: translateY(0); }
+
   .sc-tier-info-modal {
     background: #171F22; border: 1px solid #2A363A; border-radius: 14px;
     padding: 18px 20px; max-width: 360px; width: 100%; max-height: 80vh; overflow-y: auto;
@@ -553,6 +567,20 @@
   </div>
 </div>
 
+<div class="sc-modal-overlay" id="sc-note-edit-overlay">
+  <div class="sc-modal" style="background:#171F22; border:1px solid #2A363A; border-radius:16px;">
+    <div class="sc-modal-title">編輯備註</div>
+    <div class="sc-modal-field">
+      <label>備註內容</label>
+      <textarea id="sc-note-edit-text" rows="4" placeholder="例如:入金日期、鎖倉期限、注意事項..." style="background:#1E282C;border:1px solid #2A363A;color:#F5F9FA;border-radius:8px;padding:9px 10px;font-size:14px;font-family:inherit;width:100%;resize:vertical;box-sizing:border-box;"></textarea>
+    </div>
+    <div class="sc-modal-actions">
+      <button class="sc-btn secondary" id="sc-note-edit-cancel-btn">取消</button>
+      <button class="sc-btn" id="sc-note-edit-save-btn">儲存備註</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function() {
   const STORE_KEY_HOLDINGS = 'sc:holdings';
@@ -589,6 +617,9 @@
   let sortKey = null;
   let sortDir = 'asc';
 
+  let noteEditId = null;
+  let noteEditIsBtc = false;
+
   // Two independent palettes so exchange colors never influence coin colors.
   const EXCHANGE_PALETTE = [
     { bg: 'rgba(232,181,95,0.16)',  fg: '#F0C878', border: 'rgba(232,181,95,0.5)' },
@@ -624,6 +655,19 @@
   }
   function uid() {
     return 'h_' + Math.random().toString(36).slice(2, 10);
+  }
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+  function noteButtonHtml(h) {
+    const hasNote = h.notes && String(h.notes).trim().length > 0;
+    const tooltip = hasNote ? '<span class="sc-note-tooltip">' + escapeHtml(h.notes).replace(/\n/g, '<br>') + '</span>' : '';
+    return '<button type="button" class="sc-icon-btn note' + (hasNote ? ' has-note' : '') + '" data-note-id="' + h.id + '" title="備註">🗒' + tooltip + '</button>';
   }
 
   // Color is assigned by each item's fixed position in its own managed list,
@@ -919,6 +963,7 @@
         '<td class="sc-num">' + fmtUSD(yearly) + '</td>' +
         '<td style="text-align:center; white-space:nowrap;">' +
           '<button class="sc-icon-btn edit" data-edit-id="' + h.id + '" title="編輯">✎</button>' +
+          noteButtonHtml(h) +
           '<button class="sc-icon-btn" data-id="' + h.id + '" title="刪除">✕</button>' +
         '</td>';
       body.appendChild(tr);
@@ -936,6 +981,9 @@
     });
     body.querySelectorAll('button[data-tier-info-id]').forEach(btn => {
       btn.onclick = () => openTierInfoModal(btn.dataset.tierInfoId);
+    });
+    body.querySelectorAll('button[data-note-id]').forEach(btn => {
+      btn.onclick = () => openNoteModal(btn.dataset.noteId, false);
     });
 
     $('sc-sum-daily-usd').textContent = fmtUSD(sumDaily);
@@ -1100,6 +1148,26 @@
     overlay.style.display = 'none';
   }
 
+  function openNoteModal(id, isBtc) {
+    const list = isBtc ? btcHoldings : holdings;
+    const h = list.find(x => x.id === id);
+    if (!h) return;
+    noteEditId = id;
+    noteEditIsBtc = isBtc;
+    $('sc-note-edit-text').value = h.notes || '';
+    const overlay = $('sc-note-edit-overlay');
+    overlay.classList.add('open');
+    overlay.style.display = 'flex';
+    setTimeout(() => $('sc-note-edit-text').focus(), 50);
+  }
+
+  function closeNoteModal() {
+    const overlay = $('sc-note-edit-overlay');
+    overlay.classList.remove('open');
+    overlay.style.display = 'none';
+    noteEditId = null;
+  }
+
   function renderBtcSelects() {
     const sel = $('sc-btc-add-exchange-select');
     const prev = sel.value;
@@ -1176,6 +1244,7 @@
         '<td class="sc-num">' + yearly.toLocaleString('en-US', {maximumFractionDigits: 8}) + '</td>' +
         '<td style="text-align:center; white-space:nowrap;">' +
           '<button class="sc-icon-btn edit" data-btc-edit-id="' + h.id + '" title="編輯">✎</button>' +
+          noteButtonHtml(h) +
           '<button class="sc-icon-btn" data-btc-id="' + h.id + '" title="刪除">✕</button>' +
         '</td>';
       body.appendChild(tr);
@@ -1193,6 +1262,9 @@
     });
     body.querySelectorAll('button[data-btc-tier-info-id]').forEach(btn => {
       btn.onclick = () => openTierInfoModal(btn.dataset.btcTierInfoId, btcHoldings);
+    });
+    body.querySelectorAll('button[data-note-id]').forEach(btn => {
+      btn.onclick = () => openNoteModal(btn.dataset.noteId, true);
     });
 
     $('sc-btc-total-amount').textContent = totalBtc.toLocaleString('en-US', {maximumFractionDigits: 8}) + ' BTC';
@@ -1453,6 +1525,31 @@
     $('sc-tier-info-overlay').addEventListener('click', (e) => {
       if (e.target === $('sc-tier-info-overlay')) closeTierInfoModal();
     });
+
+    $('sc-note-edit-cancel-btn').onclick = closeNoteModal;
+    $('sc-note-edit-overlay').addEventListener('click', (e) => {
+      if (e.target === $('sc-note-edit-overlay')) closeNoteModal();
+    });
+    $('sc-note-edit-save-btn').onclick = async () => {
+      if (!noteEditId) return;
+      const text = $('sc-note-edit-text').value;
+      if (noteEditIsBtc) {
+        const idx = btcHoldings.findIndex(h => h.id === noteEditId);
+        if (idx !== -1) {
+          btcHoldings[idx].notes = text;
+          await saveBtcHoldings();
+          renderBtcTable();
+        }
+      } else {
+        const idx = holdings.findIndex(h => h.id === noteEditId);
+        if (idx !== -1) {
+          holdings[idx].notes = text;
+          await saveHoldings();
+          renderTable();
+        }
+      }
+      closeNoteModal();
+    };
 
     $('sc-edit-save-btn').onclick = async () => {
       if (!editHoldingId) return;
