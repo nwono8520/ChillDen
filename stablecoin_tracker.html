@@ -236,7 +236,7 @@
     border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: var(--font-body);
   }
   .sc-add-row input[type=number] { width: 100px; font-family: var(--font-mono); }
-  .sc-date-field { position: relative; width: 150px; box-sizing: border-box; }
+  .sc-date-field { position: relative; width: 150px; max-width: 100%; box-sizing: border-box; overflow: hidden; border-radius: 8px; }
   .sc-date-field input[type=date] {
     display: block; width: 100%; box-sizing: border-box; margin: 0;
     background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px;
@@ -250,7 +250,7 @@
     pointer-events: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .sc-date-placeholder.hidden { display: none; }
-  .sc-date-field-modal { width: 100%; max-width: 100%; }
+  .sc-date-field-modal { width: 100%; max-width: 100%; box-sizing: border-box; }
   .sc-date-field-modal input[type=date] { padding: 9px 10px; font-size: 16px; }
   .sc-date-field-modal .sc-date-placeholder { font-size: 16px; left: 12px; right: 34px; }
   .sc-add-row select { min-width: 110px; }
@@ -308,7 +308,7 @@
     background: var(--surface-2); border: 1px solid var(--line); color: var(--text);
     border-radius: 8px; padding: 9px 10px; font-size: 16px; font-family: var(--font-body); width: 100%;
   }
-  .sc-modal-field input[type=date] { color-scheme: dark; font-family: var(--font-mono); color: var(--text); -webkit-text-fill-color: var(--text); }
+  .sc-modal-field input[type=date] { color-scheme: dark; font-family: var(--font-mono); }
   .sc-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
   @media (max-width: 700px) {
     .sc-modal { padding: 18px; border-radius: 14px; }
