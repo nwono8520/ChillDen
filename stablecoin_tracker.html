@@ -243,6 +243,12 @@
     padding: 8px 10px; font-size: 13px; font-family: var(--font-mono); text-align: left;
     color: transparent; -webkit-text-fill-color: transparent; color-scheme: dark; cursor: pointer;
   }
+  .sc-date-field input[type=date]::-webkit-datetime-edit-fields-wrapper {
+    display: flex; justify-content: flex-start; padding: 0; margin: 0;
+  }
+  .sc-date-field input[type=date]::-webkit-datetime-edit {
+    text-align: left; padding: 0;
+  }
   .sc-date-field input[type=date].has-value { color: var(--text); -webkit-text-fill-color: var(--text); }
   .sc-date-placeholder {
     position: absolute; left: 11px; right: 28px; top: 50%; transform: translateY(-50%);
