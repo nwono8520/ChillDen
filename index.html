@@ -1400,24 +1400,28 @@ function setStatus(state, msg){
 }
 
 async function fetchCsv(){
-  const bust = '_ts=' + Date.now();
+  const bust = '_ts=' + Date.now() + '_' + Math.random().toString(36).slice(2);
   const sep = CSV_URL.includes('?') ? '&' : '?';
   const target = CSV_URL + sep + bust;
 
+  // 每個跳板服務的「外層」網址也各自加一個獨立的防快取參數,
+  // 避免這些第三方服務自己快取住舊內容(它們可能只看外層網址決定要不要用快取,
+  // 沒有注意到我們包在裡面、指向 Google 的那段網址其實每次都不一樣)。
   const attempts = [
-    () => fetch(target, { cache: 'no-store' }),
-    () => fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(target), { cache: 'no-store' }),
-    () => fetch('https://corsproxy.io/?url=' + encodeURIComponent(target), { cache: 'no-store' }),
-    () => fetch('https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(target), { cache: 'no-store' }),
+    { name: 'direct', fn: () => fetch(target, { cache: 'no-store' }) },
+    { name: 'allorigins', fn: () => fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(target) + '&_r=' + Math.random(), { cache: 'no-store' }) },
+    { name: 'corsproxy', fn: () => fetch('https://corsproxy.io/?url=' + encodeURIComponent(target) + '&_r=' + Math.random(), { cache: 'no-store' }) },
+    { name: 'codetabs', fn: () => fetch('https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(target) + '&_r=' + Math.random(), { cache: 'no-store' }) },
   ];
 
   let lastErr = null;
   for(const attempt of attempts){
     try{
-      const res = await attempt();
+      const res = await attempt.fn();
       if(!res.ok) throw new Error('HTTP ' + res.status);
       const text = await res.text();
       if(!text || text.trim() === '') throw new Error('回傳內容是空的');
+      window.__lastFetchMethod = attempt.name;
       return text;
     }catch(err){
       lastErr = err;
@@ -1447,6 +1451,7 @@ async function loadData(isRetry){
 
     const now = new Date();
     setStatus('ok', '已同步 · ' + now.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'}));
+    document.getElementById('statusText').title = '資料來源:' + (window.__lastFetchMethod || '未知') + (window.__lastFetchMethod !== 'direct' ? '(透過跳板服務轉發,可能有額外快取延遲)' : '(直接連線 Google,無額外快取)');
     document.getElementById('dashboard').style.opacity = 1;
   }catch(err){
     setStatus('err','讀取失敗');
