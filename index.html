@@ -1426,7 +1426,7 @@ async function fetchCsv(){
   throw lastErr || new Error('所有連線方式皆失敗');
 }
 
-async function loadData(){
+async function loadData(isRetry){
   const icon = document.getElementById('refreshIcon');
   icon.classList.add('spin');
   document.getElementById('errBox').style.display='none';
@@ -1435,6 +1435,16 @@ async function loadData(){
     const text = await fetchCsv();
     const parsed = Papa.parse(text, {skipEmptyLines:false});
     render(parsed.data);
+
+    // 資料完整性檢查:如果算出來的實際淨值變成 0(或更低),很可能是抓資料那一瞬間
+    // 試算表裡有公式(例如即時股價)還沒算完、暫時回傳空白,不是真的歸零。
+    // 這種情況自動延遲一下再重抓一次,避免使用者看到明顯有問題的數字。
+    if (!isRetry && latestDataSummary && latestDataSummary.netAssets <= 0) {
+      await new Promise(r => setTimeout(r, 1500));
+      await loadData(true);
+      return;
+    }
+
     const now = new Date();
     setStatus('ok', '已同步 · ' + now.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'}));
     document.getElementById('dashboard').style.opacity = 1;
@@ -1470,14 +1480,16 @@ function render(data){
   // 持股權重也一起改成用這個總計自己算,不依賴試算表裡的權重公式(避免同樣的位移問題影響到它)。
   twStocks.forEach(s => { s.weight = twTotal > 0 ? s.amount / twTotal : 0; });
   // 借貸維持率 = 台股帳面總值 ÷ 股票質借金額,質借金額讀的是「負債」區塊本來就在用、沒有跑掉的那個儲存格。
-  const stockLoanAmount = parseNum(safe(data,3,9));
+  const stockLoanAmount = Math.abs(parseNum(safe(data,3,9)));
   const marginRatio = stockLoanAmount > 0 ? twTotal / stockLoanAmount : 0;
   
   renderTwStocks();
   document.getElementById('twTotal').innerHTML = fmtMoney(twTotal);
   document.getElementById('marginRatio').innerHTML = (marginRatio*100).toFixed(1) + '%';
 
-  const aTwStock = parseNum(safe(data,1,9));
+  // 這裡原本讀的是另一個獨立的儲存格,容易跟上面的台股總計對不起來。
+  // 既然都是「台股總市值」,直接沿用剛剛自己加總算好的 twTotal,兩邊保證永遠一致。
+  const aTwStock = twTotal;
   const aCash    = parseNum(safe(data,1,12));
   const aForeign = parseNum(safe(data,1,14));
 
