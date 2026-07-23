@@ -1542,11 +1542,26 @@ function render(data){
   }
   renderLoans();
 
-  const grossAssets = parseNum(safe(data,12,8));
-  const totalDebt = parseNum(safe(data,12,9));
-  const leverage = parseNum(safe(data,12,10));
-  const netAssets = parseNum(safe(data,14,8));
-  const debtRatio = parseNum(safe(data,14,9));
+  let grossAssets = parseNum(safe(data,12,8));
+  let totalDebt = parseNum(safe(data,12,9));
+  let leverage = parseNum(safe(data,12,10));
+  let netAssets = parseNum(safe(data,14,8));
+  let debtRatio = parseNum(safe(data,14,9));
+
+  // 保險機制:「帳面總資產」這幾個數字,試算表那邊也是另外用公式算好的儲存格,
+  // 一樣可能因為某檔股票公式暫時抓空而連帶跳成 0。這裡多一層檢查:
+  // 如果讀到 0,但底下個別資產(台股、美股、幣圈、現金)明明都不是 0,
+  // 代表這次抓到的是壞掉的總表,改成用已經各自算好、比較可靠的數字自己加總,不顯示明顯錯誤的 0。
+  const fallbackGross = aTwStock + aUsStock + aCrypto + aCash + aForeign + aUsd;
+  if (grossAssets <= 0 && fallbackGross > 0) {
+    grossAssets = fallbackGross;
+    totalDebt = -(Math.abs(dStock) + Math.abs(dCredit) + Math.abs(dParents));
+    netAssets = grossAssets + totalDebt;
+    debtRatio = grossAssets > 0 ? Math.abs(totalDebt) / grossAssets : 0;
+    // 槓桿倍數只算「有投入部位的資產」(台股+美股+幣圈),不含現金跟應收外債,
+    // 這個公式是拿實際數字反推對出來的,跟試算表本來算出來的倍數完全吻合。
+    leverage = netAssets > 0 ? (aTwStock + aUsStock + aCrypto) / netAssets : 0;
+  }
   
   const isNetNeg = netAssets < 0;
   document.getElementById('netAssets').innerHTML = `<span class="${isNetNeg?'val-neg':''}">${isNetNeg?'-':''}${fmtInt(Math.abs(netAssets))}</span>`;
