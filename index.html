@@ -1464,8 +1464,14 @@ function render(data){
     });
     r++;
   }
-  const twTotal = parseNum(safe(data,1,5));
-  const marginRatio = parseNum(safe(data,3,5));
+  // 台股帳面價值合計:改成把表格裡每一檔股票的金額直接加總,不再去讀試算表裡另外算好的儲存格。
+  // 這樣不管你股票清單怎麼新增、刪除、排序,總計永遠是正確的,不會再因為列數位移而讀錯。
+  const twTotal = twStocks.reduce((sum, s) => sum + s.amount, 0);
+  // 持股權重也一起改成用這個總計自己算,不依賴試算表裡的權重公式(避免同樣的位移問題影響到它)。
+  twStocks.forEach(s => { s.weight = twTotal > 0 ? s.amount / twTotal : 0; });
+  // 借貸維持率 = 台股帳面總值 ÷ 股票質借金額,質借金額讀的是「負債」區塊本來就在用、沒有跑掉的那個儲存格。
+  const stockLoanAmount = parseNum(safe(data,3,9));
+  const marginRatio = stockLoanAmount > 0 ? twTotal / stockLoanAmount : 0;
   
   renderTwStocks();
   document.getElementById('twTotal').innerHTML = fmtMoney(twTotal);
