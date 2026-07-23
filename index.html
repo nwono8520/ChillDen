@@ -1405,10 +1405,10 @@ async function fetchCsv(){
   const target = CSV_URL + sep + bust;
 
   const attempts = [
-    () => fetch(target),
-    () => fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(target)),
-    () => fetch('https://corsproxy.io/?url=' + encodeURIComponent(target)),
-    () => fetch('https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(target)),
+    () => fetch(target, { cache: 'no-store' }),
+    () => fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(target), { cache: 'no-store' }),
+    () => fetch('https://corsproxy.io/?url=' + encodeURIComponent(target), { cache: 'no-store' }),
+    () => fetch('https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(target), { cache: 'no-store' }),
   ];
 
   let lastErr = null;
