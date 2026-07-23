@@ -1400,24 +1400,28 @@ function setStatus(state, msg){
 }
 
 async function fetchCsv(){
-  const bust = '_ts=' + Date.now();
+  const bust = '_ts=' + Date.now() + '_' + Math.random().toString(36).slice(2);
   const sep = CSV_URL.includes('?') ? '&' : '?';
   const target = CSV_URL + sep + bust;
 
+  // 每個跳板服務的「外層」網址也各自加一個獨立的防快取參數,
+  // 避免這些第三方服務自己快取住舊內容(它們可能只看外層網址決定要不要用快取,
+  // 沒有注意到我們包在裡面、指向 Google 的那段網址其實每次都不一樣)。
   const attempts = [
-    () => fetch(target),
-    () => fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(target)),
-    () => fetch('https://corsproxy.io/?url=' + encodeURIComponent(target)),
-    () => fetch('https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(target)),
+    { name: 'direct', fn: () => fetch(target, { cache: 'no-store' }) },
+    { name: 'allorigins', fn: () => fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(target) + '&_r=' + Math.random(), { cache: 'no-store' }) },
+    { name: 'corsproxy', fn: () => fetch('https://corsproxy.io/?url=' + encodeURIComponent(target) + '&_r=' + Math.random(), { cache: 'no-store' }) },
+    { name: 'codetabs', fn: () => fetch('https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(target) + '&_r=' + Math.random(), { cache: 'no-store' }) },
   ];
 
   let lastErr = null;
   for(const attempt of attempts){
     try{
-      const res = await attempt();
+      const res = await attempt.fn();
       if(!res.ok) throw new Error('HTTP ' + res.status);
       const text = await res.text();
       if(!text || text.trim() === '') throw new Error('回傳內容是空的');
+      window.__lastFetchMethod = attempt.name;
       return text;
     }catch(err){
       lastErr = err;
@@ -1426,7 +1430,7 @@ async function fetchCsv(){
   throw lastErr || new Error('所有連線方式皆失敗');
 }
 
-async function loadData(){
+async function loadData(isRetry){
   const icon = document.getElementById('refreshIcon');
   icon.classList.add('spin');
   document.getElementById('errBox').style.display='none';
@@ -1435,8 +1439,19 @@ async function loadData(){
     const text = await fetchCsv();
     const parsed = Papa.parse(text, {skipEmptyLines:false});
     render(parsed.data);
+
+    // 資料完整性檢查:如果算出來的實際淨值變成 0(或更低),很可能是抓資料那一瞬間
+    // 試算表裡有公式(例如即時股價)還沒算完、暫時回傳空白,不是真的歸零。
+    // 這種情況自動延遲一下再重抓一次,避免使用者看到明顯有問題的數字。
+    if (!isRetry && latestDataSummary && latestDataSummary.netAssets <= 0) {
+      await new Promise(r => setTimeout(r, 1500));
+      await loadData(true);
+      return;
+    }
+
     const now = new Date();
     setStatus('ok', '已同步 · ' + now.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'}));
+    document.getElementById('statusText').title = '資料來源:' + (window.__lastFetchMethod || '未知') + (window.__lastFetchMethod !== 'direct' ? '(透過跳板服務轉發,可能有額外快取延遲)' : '(直接連線 Google,無額外快取)');
     document.getElementById('dashboard').style.opacity = 1;
   }catch(err){
     setStatus('err','讀取失敗');
@@ -1464,14 +1479,22 @@ function render(data){
     });
     r++;
   }
-  const twTotal = parseNum(safe(data,1,5));
-  const marginRatio = parseNum(safe(data,3,5));
+  // 台股帳面價值合計:改成把表格裡每一檔股票的金額直接加總,不再去讀試算表裡另外算好的儲存格。
+  // 這樣不管你股票清單怎麼新增、刪除、排序,總計永遠是正確的,不會再因為列數位移而讀錯。
+  const twTotal = twStocks.reduce((sum, s) => sum + s.amount, 0);
+  // 持股權重也一起改成用這個總計自己算,不依賴試算表裡的權重公式(避免同樣的位移問題影響到它)。
+  twStocks.forEach(s => { s.weight = twTotal > 0 ? s.amount / twTotal : 0; });
+  // 借貸維持率 = 台股帳面總值 ÷ 股票質借金額,質借金額讀的是「負債」區塊本來就在用、沒有跑掉的那個儲存格。
+  const stockLoanAmount = Math.abs(parseNum(safe(data,3,9)));
+  const marginRatio = stockLoanAmount > 0 ? twTotal / stockLoanAmount : 0;
   
   renderTwStocks();
   document.getElementById('twTotal').innerHTML = fmtMoney(twTotal);
   document.getElementById('marginRatio').innerHTML = (marginRatio*100).toFixed(1) + '%';
 
-  const aTwStock = parseNum(safe(data,1,9));
+  // 這裡原本讀的是另一個獨立的儲存格,容易跟上面的台股總計對不起來。
+  // 既然都是「台股總市值」,直接沿用剛剛自己加總算好的 twTotal,兩邊保證永遠一致。
+  const aTwStock = twTotal;
   const aCash    = parseNum(safe(data,1,12));
   const aForeign = parseNum(safe(data,1,14));
 
@@ -1524,11 +1547,17 @@ function render(data){
   }
   renderLoans();
 
-  const grossAssets = parseNum(safe(data,12,8));
-  const totalDebt = parseNum(safe(data,12,9));
-  const leverage = parseNum(safe(data,12,10));
-  const netAssets = parseNum(safe(data,14,8));
-  const debtRatio = parseNum(safe(data,14,9));
+  // 這幾個數字全部改成「自己用已經各自算好、比較可靠的個別資產/負債直接加總」,
+  // 不再去讀試算表裡另外算好的總表儲存格。原本的備援機制只在讀到「乾淨的 0」時才會啟動,
+  // 如果那次抓到的是某種殘留的奇怪數值(不是單純的 0),備援反而不會觸發,問題就會漏網。
+  // 直接改成永遠自己加總,徹底不依賴那些容易受同一個計算延遲問題影響的固定儲存格。
+  const grossAssets = aTwStock + aUsStock + aCrypto + aCash + aForeign + aUsd;
+  const totalDebt = -(Math.abs(dStock) + Math.abs(dCredit) + Math.abs(dParents));
+  const netAssets = grossAssets + totalDebt;
+  const debtRatio = grossAssets > 0 ? Math.abs(totalDebt) / grossAssets : 0;
+  // 槓桿倍數只算「有投入部位的資產」(台股+美股+幣圈),不含現金跟應收外債,
+  // 這個公式是拿實際數字反推對出來的,跟試算表本來算出來的倍數完全吻合。
+  const leverage = netAssets > 0 ? (aTwStock + aUsStock + aCrypto) / netAssets : 0;
   
   const isNetNeg = netAssets < 0;
   document.getElementById('netAssets').innerHTML = `<span class="${isNetNeg?'val-neg':''}">${isNetNeg?'-':''}${fmtInt(Math.abs(netAssets))}</span>`;
